@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sample Survey Points</name>
+    <description>Example elevation points for TopoConvert demonstration</description>
+    <Style id="pointStyle">
+      <IconStyle>
+        <color>ff0000ff</color>
+        <scale>1.0</scale>
+      </IconStyle>
+    </Style>
+    <Folder>
+      <name>Survey Points</name>
+      <Placemark>
+        <name>Point 1</name>
+        <description>Elevation: 100.5m</description>
+        <styleUrl>#pointStyle</styleUrl>
+        <Point>
+          <coordinates>-122.0822035,37.4222899,100.5</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 2</name>
+        <description>Elevation: 102.3m</description>
+        <styleUrl>#pointStyle</styleUrl>
+        <Point>
+          <coordinates>-122.0820000,37.4220000,102.3</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 3</name>
+        <description>Elevation: 101.8m</description>
+        <styleUrl>#pointStyle</styleUrl>
+        <Point>
+          <coordinates>-122.0825000,37.4218000,101.8</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 4</name>
+        <description>Elevation: 103.2m</description>
+        <styleUrl>#pointStyle</styleUrl>
+        <Point>
+          <coordinates>-122.0818000,37.4225000,103.2</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 5</name>
+        <description>Elevation: 99.7m</description>
+        <styleUrl>#pointStyle</styleUrl>
+        <Point>
+          <coordinates>-122.0827000,37.4223000,99.7</coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

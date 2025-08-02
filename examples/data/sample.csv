@@ -1,0 +1,11 @@
+x,y,z,name,description
+-122.0822035,37.4222899,100.5,Point 1,Control point
+-122.0820000,37.4220000,102.3,Point 2,Ridge point
+-122.0825000,37.4218000,101.8,Point 3,Slope point
+-122.0818000,37.4225000,103.2,Point 4,Peak point
+-122.0827000,37.4223000,99.7,Point 5,Valley point
+-122.0815000,37.4221000,101.2,Point 6,Mid-slope
+-122.0823000,37.4226000,100.8,Point 7,Saddle point
+-122.0819500,37.4217500,104.1,Point 8,High point
+-122.0824500,37.4220500,102.5,Point 9,Terrace edge
+-122.0821000,37.4224000,101.0,Point 10,Base station
