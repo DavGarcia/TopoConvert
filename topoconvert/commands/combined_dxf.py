@@ -1,25 +1,48 @@
-"""Combine multiple DXF files into a single file."""
+"""Merge multiple CSV files into a single DXF with 3D points."""
 import click
+from pathlib import Path
+from topoconvert.core.combined_dxf import merge_csv_to_dxf
+from topoconvert.core.exceptions import TopoConvertError
+from topoconvert.core.utils import create_progress_callback
 
 
 def register(cli):
     """Register the combined-dxf command with the CLI."""
     @cli.command('combined-dxf')
-    @click.argument('input_files', nargs=-1, required=True, 
+    @click.argument('csv_files', nargs=-1, required=True, 
                     type=click.Path(exists=True))
     @click.option('--output', '-o', type=click.Path(), required=True,
                   help='Output DXF file path')
-    @click.option('--merge-layers/--keep-layers', default=False,
-                  help='Merge all entities into a single layer')
-    def combined_dxf(input_files, output, merge_layers):
-        """Combine multiple DXF files into one.
+    def combined_dxf(csv_files, output):
+        """Merge multiple CSV files into a single DXF with 3D points.
         
-        INPUT_FILES: Paths to input DXF files (multiple files)
+        Each CSV file should have Latitude, Longitude, and Elevation columns.
+        Points from each CSV will be placed on separate layers with different colors.
+        All coordinates are translated so the global minimum becomes the origin.
+        
+        CSV_FILES: Paths to input CSV files (multiple files)
         """
-        # Implementation will be added later
-        click.echo(f"Combining {len(input_files)} DXF files")
-        for f in input_files:
-            click.echo(f"  - {f}")
-        click.echo(f"Output: {output}")
-        click.echo(f"Layer handling: {'merge' if merge_layers else 'keep separate'}")
-        click.echo("Note: Implementation pending")
+        try:
+            # Convert to Path objects
+            csv_paths = [Path(f) for f in csv_files]
+            
+            # Create progress callback
+            progress = create_progress_callback("Merging CSV files", length=100)
+            
+            # Merge CSV files to DXF
+            merge_csv_to_dxf(
+                csv_files=csv_paths,
+                output_file=Path(output),
+                progress_callback=progress
+            )
+            
+            # Close progress bar
+            if hasattr(progress, 'close'):
+                progress.close()
+                
+        except TopoConvertError as e:
+            click.echo(f"Error: {e}", err=True)
+            raise click.ClickException(str(e))
+        except Exception as e:
+            click.echo(f"Unexpected error: {e}", err=True)
+            raise click.ClickException(f"CSV merge failed: {e}")
