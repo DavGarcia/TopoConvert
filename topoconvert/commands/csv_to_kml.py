@@ -1,5 +1,9 @@
 """Convert CSV data to KML format."""
 import click
+from pathlib import Path
+from topoconvert.core.csv_kml import convert_csv_to_kml
+from topoconvert.core.exceptions import TopoConvertError
+from topoconvert.core.utils import create_progress_callback
 
 
 def register(cli):
@@ -9,20 +13,58 @@ def register(cli):
     @click.argument('output_file', type=click.Path())
     @click.option('--add-labels/--no-labels', default=True,
                   help='Add labels to KML placemarks')
-    @click.option('--x-column', '-x', default='x',
-                  help='Column name for X coordinates')
-    @click.option('--y-column', '-y', default='y',
-                  help='Column name for Y coordinates')
-    @click.option('--z-column', '-z', default='z',
-                  help='Column name for Z coordinates (elevation)')
-    def csv_to_kml(input_file, output_file, add_labels, x_column, y_column, z_column):
+    @click.option('--x-column', '-x', default='Longitude',
+                  help='Column name for longitude/X coordinates')
+    @click.option('--y-column', '-y', default='Latitude',
+                  help='Column name for latitude/Y coordinates')
+    @click.option('--z-column', '-z', default='Elevation',
+                  help='Column name for elevation/Z coordinates')
+    @click.option('--elevation-units', type=click.Choice(['meters', 'feet']),
+                  default='meters',
+                  help='Units of elevation in CSV')
+    @click.option('--point-style', type=click.Choice(['circle', 'pin', 'square']),
+                  default='circle',
+                  help='Point style in KML')
+    @click.option('--point-color', default='ff00ff00',
+                  help='Point color in AABBGGRR format (default: green)')
+    @click.option('--point-scale', type=float, default=0.8,
+                  help='Point scale factor')
+    @click.option('--kml-name', default=None,
+                  help='Name for KML document (default: input filename)')
+    def csv_to_kml(input_file, output_file, add_labels, x_column, y_column, z_column,
+                   elevation_units, point_style, point_color, point_scale, kml_name):
         """Convert CSV survey data to KML format.
         
         INPUT_FILE: Path to input CSV file
         OUTPUT_FILE: Path to output KML file
         """
-        # Implementation will be added later
-        click.echo(f"Converting {input_file} to {output_file}")
-        click.echo(f"Using columns: X={x_column}, Y={y_column}, Z={z_column}")
-        click.echo(f"Labels: {'enabled' if add_labels else 'disabled'}")
-        click.echo("Note: Implementation pending")
+        try:
+            # Create progress callback
+            progress = create_progress_callback("Converting CSV to KML", length=100)
+            
+            # Convert CSV to KML
+            convert_csv_to_kml(
+                input_file=Path(input_file),
+                output_file=Path(output_file),
+                elevation_units=elevation_units,
+                point_style=point_style,
+                point_color=point_color,
+                point_scale=point_scale,
+                add_labels=add_labels,
+                kml_name=kml_name,
+                x_column=x_column,
+                y_column=y_column,
+                z_column=z_column,
+                progress_callback=progress
+            )
+            
+            # Close progress bar
+            if hasattr(progress, 'close'):
+                progress.close()
+                
+        except TopoConvertError as e:
+            click.echo(f"Error: {e}", err=True)
+            raise click.ClickException(str(e))
+        except Exception as e:
+            click.echo(f"Unexpected error: {e}", err=True)
+            raise click.ClickException(f"CSV to KML conversion failed: {e}")

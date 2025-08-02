@@ -171,5 +171,6 @@ ehthumbs_vista.db
 *.kmz
 /examples/data/output/
 
-# Agent OS
+# AI tools
 .agent-os/
+/.claude
