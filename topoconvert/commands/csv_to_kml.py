@@ -3,7 +3,6 @@ import click
 from pathlib import Path
 from topoconvert.core.csv_kml import convert_csv_to_kml
 from topoconvert.core.exceptions import TopoConvertError
-from topoconvert.core.utils import create_progress_callback
 
 
 def register(cli):
@@ -39,9 +38,6 @@ def register(cli):
         OUTPUT_FILE: Path to output KML file
         """
         try:
-            # Create progress callback
-            progress = create_progress_callback("Converting CSV to KML", length=100)
-            
             # Convert CSV to KML
             convert_csv_to_kml(
                 input_file=Path(input_file),
@@ -55,12 +51,8 @@ def register(cli):
                 x_column=x_column,
                 y_column=y_column,
                 z_column=z_column,
-                progress_callback=progress
+                progress_callback=None
             )
-            
-            # Close progress bar
-            if hasattr(progress, 'close'):
-                progress.close()
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

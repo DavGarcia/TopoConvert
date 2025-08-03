@@ -3,7 +3,6 @@ import click
 from pathlib import Path
 from topoconvert.core.mesh import generate_mesh
 from topoconvert.core.exceptions import TopoConvertError
-from topoconvert.core.utils import create_progress_callback
 
 
 def register(cli):
@@ -38,9 +37,6 @@ def register(cli):
         OUTPUT_FILE: Path to output DXF file
         """
         try:
-            # Create progress callback
-            progress = create_progress_callback("Generating mesh", length=100)
-            
             # Generate mesh
             generate_mesh(
                 input_file=Path(input_file),
@@ -52,12 +48,8 @@ def register(cli):
                 mesh_color=mesh_color,
                 add_wireframe=add_wireframe,
                 wireframe_color=wireframe_color,
-                progress_callback=progress
+                progress_callback=None
             )
-            
-            # Close progress bar
-            if hasattr(progress, 'close'):
-                progress.close()
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

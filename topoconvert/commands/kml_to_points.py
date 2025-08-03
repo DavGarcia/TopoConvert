@@ -3,7 +3,6 @@ import click
 from pathlib import Path
 from topoconvert.core.points import extract_points
 from topoconvert.core.exceptions import TopoConvertError
-from topoconvert.core.utils import create_progress_callback
 
 
 def register(cli):
@@ -35,9 +34,6 @@ def register(cli):
         OUTPUT_FILE: Path to output file
         """
         try:
-            # Create progress callback
-            progress = create_progress_callback("Extracting points", length=100)
-            
             # Extract points
             extract_points(
                 input_file=Path(input_file),
@@ -48,12 +44,8 @@ def register(cli):
                 use_reference_point=use_reference_point,
                 layer_name=layer_name,
                 point_color=point_color,
-                progress_callback=progress
+                progress_callback=None
             )
-            
-            # Close progress bar
-            if hasattr(progress, 'close'):
-                progress.close()
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

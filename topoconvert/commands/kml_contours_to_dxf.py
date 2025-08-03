@@ -3,7 +3,6 @@ import click
 from pathlib import Path
 from topoconvert.core.kml_contours import convert_kml_contours_to_dxf
 from topoconvert.core.exceptions import TopoConvertError
-from topoconvert.core.utils import create_progress_callback
 
 
 def register(cli):
@@ -46,9 +45,6 @@ def register(cli):
         OUTPUT_FILE: Path to output DXF file
         """
         try:
-            # Create progress callback
-            progress = create_progress_callback("Converting contours", length=100)
-            
             # Convert KML contours to DXF
             convert_kml_contours_to_dxf(
                 input_file=Path(input_file),
@@ -63,12 +59,8 @@ def register(cli):
                 altitude_tolerance=altitude_tolerance,
                 translate_to_origin=translate,
                 target_epsg_feet=target_epsg_feet,
-                progress_callback=progress
+                progress_callback=None
             )
-            
-            # Close progress bar
-            if hasattr(progress, 'close'):
-                progress.close()
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)
