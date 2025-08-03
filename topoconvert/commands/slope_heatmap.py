@@ -29,10 +29,6 @@ def register(cli):
                      slope_units, run_length, max_slope, colormap, dpi, smooth):
         """Generate slope analysis heatmap from KML elevation data.
         
-        Calculates terrain slope from KML point data and generates a color-coded 
-        visualization as PNG. Uses interpolation and gradient analysis to determine
-        slope values across the surveyed area.
-        
         INPUT_FILE: Path to input KML file with elevation points
         OUTPUT_FILE: Path to output PNG image file
         """

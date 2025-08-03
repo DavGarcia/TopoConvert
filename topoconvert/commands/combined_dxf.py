@@ -16,10 +16,6 @@ def register(cli):
     def combined_dxf(csv_files, output):
         """Merge multiple CSV files into a single DXF with 3D points.
         
-        Each CSV file should have Latitude, Longitude, and Elevation columns.
-        Points from each CSV will be placed on separate layers with different colors.
-        All coordinates are translated so the global minimum becomes the origin.
-        
         CSV_FILES: Paths to input CSV files (multiple files)
         """
         try:

@@ -12,23 +12,23 @@ def register(cli):
     @click.argument('input_file', type=click.Path(exists=True))
     @click.argument('output_file', type=click.Path())
     @click.option('--add-labels/--no-labels', default=True,
-                  help='Add labels to KML placemarks')
+                  help='Add labels to KML placemarks (default: add labels)')
     @click.option('--x-column', '-x', default='Longitude',
-                  help='Column name for longitude/X coordinates')
+                  help='Column name for longitude/X coordinates (default: Longitude)')
     @click.option('--y-column', '-y', default='Latitude',
-                  help='Column name for latitude/Y coordinates')
+                  help='Column name for latitude/Y coordinates (default: Latitude)')
     @click.option('--z-column', '-z', default='Elevation',
-                  help='Column name for elevation/Z coordinates')
+                  help='Column name for elevation/Z coordinates (default: Elevation)')
     @click.option('--elevation-units', type=click.Choice(['meters', 'feet']),
                   default='meters',
-                  help='Units of elevation in CSV')
+                  help='Units of elevation in CSV (default: meters)')
     @click.option('--point-style', type=click.Choice(['circle', 'pin', 'square']),
                   default='circle',
-                  help='Point style in KML')
+                  help='Point style in KML (default: circle)')
     @click.option('--point-color', default='ff00ff00',
-                  help='Point color in AABBGGRR format (default: green)')
+                  help='Point color in AABBGGRR format (default: ff00ff00 = green)')
     @click.option('--point-scale', type=float, default=0.8,
-                  help='Point scale factor')
+                  help='Point scale factor (default: 0.8)')
     @click.option('--kml-name', default=None,
                   help='Name for KML document (default: input filename)')
     def csv_to_kml(input_file, output_file, add_labels, x_column, y_column, z_column,

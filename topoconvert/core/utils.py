@@ -95,34 +95,19 @@ def create_progress_callback(
         Progress callback function
     """
     if not show:
-        return lambda *args, **kwargs: None
+        # Return a no-op function
+        no_op = lambda *args, **kwargs: None
+        no_op.close = lambda: None
+        return no_op
     
-    # Create progress bar context
-    progress_bar = None
-    current = 0
+    # For simple percentage-based progress updates
+    def callback(message: str = "", percent: int = 0):
+        """Update progress with a message and percentage."""
+        # This is a placeholder - the actual implementation should use
+        # the progress tracking from the core modules
+        pass
     
-    def callback(item=None, increment=1):
-        nonlocal progress_bar, current
-        
-        if progress_bar is None:
-            progress_bar = click.progressbar(
-                length=length,
-                label=label,
-                show_percent=length is not None,
-                show_pos=length is not None
-            )
-            progress_bar.__enter__()
-        
-        current += increment
-        progress_bar.update(increment)
-        
-        # Close progress bar when done
-        if length is not None and current >= length:
-            progress_bar.__exit__(None, None, None)
-    
-    # Store the progress bar for cleanup
-    callback.progress_bar = progress_bar
-    callback.close = lambda: progress_bar.__exit__(None, None, None) if progress_bar else None
+    callback.close = lambda: None
     
     return callback
 

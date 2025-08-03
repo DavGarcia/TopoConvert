@@ -167,9 +167,9 @@ ehthumbs_vista.db
 /output/
 /temp/
 *.dxf
-*.kml
 *.kmz
 /examples/data/output/
+/testdata/
 
 # AI tools
 .agent-os/

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>survey_data_1</name>
+    <description>GPS points converted from CSV</description>
+    
+    <Style id="gpsPointStyle">
+      <IconStyle>
+        <color>ff00ff00</color>
+        <scale>0.8</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>
+        </Icon>
+        <hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0.8</scale>
+      </LabelStyle>
+    </Style>
+    <Placemark>
+      <name>325.5 meters</name>
+      <description>Elevation: 325.50 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7431,30.2672,325.5</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>327.2 meters</name>
+      <description>Elevation: 327.20 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7425,30.2672,327.2</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>329.8 meters</name>
+      <description>Elevation: 329.80 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7419,30.2672,329.8</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>324.1 meters</name>
+      <description>Elevation: 324.10 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7431,30.2678,324.1</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>326.8 meters</name>
+      <description>Elevation: 326.75 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7425,30.2678,326.75</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>331.4 meters</name>
+      <description>Elevation: 331.40 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7419,30.2678,331.4</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>322.9 meters</name>
+      <description>Elevation: 322.90 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7431,30.2684,322.9</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>325.3 meters</name>
+      <description>Elevation: 325.30 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7425,30.2684,325.3</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>333.1 meters</name>
+      <description>Elevation: 333.15 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7419,30.2684,333.15</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>321.6 meters</name>
+      <description>Elevation: 321.60 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7431,30.269,321.6</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>323.9 meters</name>
+      <description>Elevation: 323.85 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7425,30.269,323.85</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>334.7 meters</name>
+      <description>Elevation: 334.70 meters</description>
+      <styleUrl>#gpsPointStyle</styleUrl>
+      <Point>
+        <coordinates>-97.7419,30.269,334.7</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>
