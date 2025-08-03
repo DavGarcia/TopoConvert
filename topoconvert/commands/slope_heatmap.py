@@ -27,7 +27,7 @@ def register(cli):
                   help='Gaussian smoothing sigma')
     def slope_heatmap(input_file, output_file, elevation_units, grid_resolution,
                      slope_units, run_length, max_slope, colormap, dpi, smooth):
-        """Generate slope analysis heatmap from KML elevation data.
+        """Generate slope heatmap from elevation data.
         
         INPUT_FILE: Path to input KML file with elevation points
         OUTPUT_FILE: Path to output PNG image file

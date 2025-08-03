@@ -13,7 +13,7 @@ def register(cli):
     @click.option('--output', '-o', type=click.Path(), required=True,
                   help='Output DXF file path')
     def combined_dxf(csv_files, output):
-        """Merge multiple CSV files into a single DXF with 3D points.
+        """Merge multiple CSV files into a single DXF.
         
         CSV_FILES: Paths to input CSV files (multiple files)
         """
