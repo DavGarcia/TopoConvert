@@ -6,8 +6,8 @@ from topoconvert.core.exceptions import TopoConvertError
 
 
 def register(cli):
-    """Register the kml-to-mesh command with the CLI."""
-    @cli.command('kml-to-mesh')
+    """Register the kml-to-dxf-mesh command with the CLI."""
+    @cli.command('kml-to-dxf-mesh')
     @click.argument('input_file', type=click.Path(exists=True))
     @click.argument('output_file', type=click.Path())
     @click.option('--elevation-units', type=click.Choice(['meters', 'feet']),

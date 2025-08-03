@@ -6,8 +6,8 @@ from topoconvert.core.exceptions import TopoConvertError
 
 
 def register(cli):
-    """Register the kml-to-contours command with the CLI."""
-    @cli.command('kml-to-contours')
+    """Register the kml-to-dxf-contours command with the CLI."""
+    @cli.command('kml-to-dxf-contours')
     @click.argument('input_file', type=click.Path(exists=True))
     @click.argument('output_file', type=click.Path())
     @click.option('--interval', '-i', type=float, default=1.0,
