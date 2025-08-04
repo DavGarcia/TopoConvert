@@ -27,11 +27,9 @@ def register(cli):
                   help='AutoCAD color index for wireframe (default: 7)')
     @click.option('--target-epsg', type=int, default=None,
                   help='Target EPSG code for projection (default: auto-detect UTM)')
-    @click.option('--wgs84', is_flag=True,
-                  help='Keep coordinates in WGS84 (no projection)')
     def kml_to_mesh(input_file, output_file, elevation_units, translate,
                    use_reference_point, layer_name, mesh_color, 
-                   no_wireframe, wireframe_color, target_epsg, wgs84):
+                   no_wireframe, wireframe_color, target_epsg):
         """Generate 3D TIN mesh from KML points.
         
         Creates a Delaunay triangulated irregular network (TIN) mesh from KML point data
@@ -41,9 +39,6 @@ def register(cli):
         INPUT_FILE: Path to input KML file
         OUTPUT_FILE: Path to output DXF file (optional, defaults to input name with .dxf)
         """
-        # Validate mutual exclusivity
-        if target_epsg and wgs84:
-            raise click.ClickException("Cannot use both --target-epsg and --wgs84")
         
         try:
             input_path = Path(input_file)
@@ -66,7 +61,7 @@ def register(cli):
                 add_wireframe=not no_wireframe,  # Invert the flag since wireframe is now default
                 wireframe_color=wireframe_color,
                 target_epsg=target_epsg,
-                wgs84=wgs84,
+                wgs84=False,  # Mesh generation requires projected coordinates
                 progress_callback=None
             )
                 

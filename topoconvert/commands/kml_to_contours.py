@@ -25,19 +25,14 @@ def register(cli):
                   help="Don't translate coordinates to origin (default: translate)")
     @click.option('--target-epsg', type=int, default=None,
                   help='Target EPSG code for projection (default: auto-detect UTM)')
-    @click.option('--wgs84', is_flag=True,
-                  help='Keep coordinates in WGS84 (no projection)')
     def kml_to_contours(input_file, output_file, interval, label, 
                        elevation_units, grid_resolution, label_height, no_translate,
-                       target_epsg, wgs84):
+                       target_epsg):
         """Convert KML points to DXF contours.
         
         INPUT_FILE: Path to input KML file containing point data
         OUTPUT_FILE: Path to output DXF file
         """
-        # Validate mutual exclusivity
-        if target_epsg and wgs84:
-            raise click.ClickException("Cannot use both --target-epsg and --wgs84")
         
         try:
             input_path = Path(input_file)
@@ -59,7 +54,7 @@ def register(cli):
                 label_height=label_height,
                 translate_to_origin=not no_translate,
                 target_epsg=target_epsg,
-                wgs84=wgs84,
+                wgs84=False,  # Contour generation requires projected coordinates
                 progress_callback=None
             )
                 
