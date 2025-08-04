@@ -9,12 +9,14 @@ TopoConvert is a Python-based command-line tool that provides a comprehensive se
 ## Features
 
 - **Multiple Format Support**: Convert between KML, CSV, and DXF formats
-- **Contour Generation**: Create contour lines from point data
-- **Mesh Generation**: Generate triangulated meshes from survey points
-- **Slope Analysis**: Create slope heatmaps and analysis reports
-- **GPS Grid Generation**: Generate GPS grid layouts for field work
-- **Batch Processing**: Combine multiple DXF files into a single output
+- **Contour Generation**: Create contour lines from point data with customizable intervals
+- **Mesh Generation**: Generate triangulated meshes from survey points (with optional wireframe)
+- **Slope Analysis**: Create slope heatmaps with contours, target slope settings, and color-blind friendly options
+- **GPS Grid Generation**: Generate GPS grid layouts within property boundaries (supports convex/concave hulls)
+- **Batch Processing**: Combine multiple CSV files into DXF (separate layers) or KML
 - **Coordinate System Support**: Handle various projection systems via pyproj
+- **Smart Defaults**: Optional output files automatically named based on input
+- **No Progress Bars**: Clean, distraction-free command execution
 
 ## Installation
 
@@ -47,30 +49,41 @@ pip install topoconvert
 TopoConvert provides a single CLI with multiple subcommands:
 
 ```bash
-# Convert KML points to DXF contours
-topoconvert kml-to-contours input.kml output.dxf --interval 1.0
+# Convert KML points to DXF contours (output file optional)
+topoconvert kml-to-dxf-contours input.kml --interval 1.0
 
 # Convert CSV to KML
 topoconvert csv-to-kml survey_data.csv output.kml --add-labels
 
-# Generate slope heatmap
-topoconvert slope-heatmap terrain.kml slope_analysis.png --slope-units degrees
+# Generate slope heatmap (output file optional, contours shown by default)
+topoconvert slope-heatmap terrain.kml --target-slope 5.0
 
-# Combine multiple DXF files
-topoconvert combined-dxf file1.dxf file2.dxf file3.dxf --output merged.dxf
+# Combine multiple CSV files to DXF on separate layers
+topoconvert multi-csv-to-dxf file1.csv file2.csv file3.csv --output merged.dxf
+
+# Combine multiple CSV files to KML
+topoconvert multi-csv-to-kml file1.csv file2.csv file3.csv output.kml
 ```
 
 ## Available Commands
 
-- `kml-to-contours` - Generate contour lines from KML point data
+### Data Conversion
 - `csv-to-kml` - Convert CSV survey data to KML format
-- `kml-to-points` - Extract point data from KML files
-- `kml-to-mesh` - Generate triangulated mesh from KML points
-- `combined-dxf` - Merge multiple DXF files
 - `kml-to-csv` - Convert KML data to CSV format
-- `slope-heatmap` - Generate slope analysis visualizations
+- `kml-to-points` - Extract points from KML (supports DXF, CSV, JSON, TXT output)
+
+### DXF Generation
+- `kml-to-dxf-contours` - Generate contour lines from KML point data
+- `kml-to-dxf-mesh` - Generate triangulated mesh from KML points (wireframe by default)
 - `kml-contours-to-dxf` - Convert KML contour lines to DXF format
-- `gps-grid` - Generate GPS grid layouts
+- `multi-csv-to-dxf` - Merge multiple CSV files to DXF on separate layers
+
+### KML Generation
+- `multi-csv-to-kml` - Combine multiple CSV files into a single KML
+- `gps-grid` - Generate GPS grid points within property boundaries
+
+### Analysis & Visualization
+- `slope-heatmap` - Generate slope analysis PNG (contours by default, color-blind friendly options)
 
 For detailed usage of each command:
 

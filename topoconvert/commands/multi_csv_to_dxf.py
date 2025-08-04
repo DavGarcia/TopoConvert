@@ -6,14 +6,18 @@ from topoconvert.core.exceptions import TopoConvertError
 
 
 def register(cli):
-    """Register the combined-dxf command with the CLI."""
-    @cli.command('combined-dxf')
+    """Register the multi-csv-to-dxf command with the CLI."""
+    @cli.command('multi-csv-to-dxf')
     @click.argument('csv_files', nargs=-1, required=True, 
                     type=click.Path(exists=True))
     @click.option('--output', '-o', type=click.Path(), required=True,
                   help='Output DXF file path')
     def combined_dxf(csv_files, output):
-        """Merge multiple CSV files into a single DXF.
+        """Merge CSV files to DXF with separate layers.
+        
+        Each CSV file is placed on its own layer with a unique color for easy
+        identification. Points are projected to NAD83/UTM Zone 14N and translated
+        to a common origin for accurate spatial alignment.
         
         CSV_FILES: Paths to input CSV files (multiple files)
         """

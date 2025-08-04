@@ -1,5 +1,8 @@
 """Generate GPS grid layouts for field work."""
 import click
+from pathlib import Path
+from topoconvert.core.gps_grid import generate_gps_grid
+from topoconvert.core.exceptions import TopoConvertError
 
 
 def register(cli):
@@ -7,21 +10,21 @@ def register(cli):
     @cli.command('gps-grid')
     @click.argument('input_file', type=click.Path(exists=True))
     @click.argument('output_file', type=click.Path())
-    @click.option('--input-type', type=click.Choice(['kml-polygon', 'csv-boundary', 'csv-extent']),
+    @click.option('--input-type', type=click.Choice(['auto', 'kml-polygon', 'csv-boundary', 'csv-extent']),
                   default='auto',
-                  help='Input type (auto-detect if not specified)')
+                  help='Input type (default: auto-detect)')
     @click.option('--spacing', type=float, default=40.0,
-                  help='Grid spacing in feet')
+                  help='Grid spacing in feet (default: 40.0)')
     @click.option('--buffer', type=float, default=0.0,
-                  help='Buffer distance in feet for csv-extent mode')
+                  help='Buffer distance in feet for csv-extent mode (default: 0.0)')
     @click.option('--boundary-type', type=click.Choice(['convex', 'concave']),
                   default='convex',
-                  help='Boundary type for csv-boundary mode')
+                  help='Boundary type for csv-boundary mode (default: convex)')
     @click.option('--point-style', type=click.Choice(['circle', 'pin', 'square']),
                   default='circle',
-                  help='Point style in output KML')
+                  help='Point style in output KML (default: circle)')
     @click.option('--grid-name', default='GPS Grid',
-                  help='Name for the grid in output KML')
+                  help='Name for the grid in output KML (default: GPS Grid)')
     def gps_grid(input_file, output_file, input_type, spacing, buffer, 
                 boundary_type, point_style, grid_name):
         """Generate GPS grid points within property boundaries.
@@ -32,15 +35,23 @@ def register(cli):
         INPUT_FILE: Input file (KML with polygons or CSV with points)
         OUTPUT_FILE: Output KML file with grid points
         """
-        click.echo(f"GPS grid generation from GPSGrid flexible_gps_grid.py")
-        click.echo(f"Input: {input_file} (type: {input_type})")
-        click.echo(f"Output: {output_file}")
-        click.echo(f"Spacing: {spacing} feet")
-        click.echo(f"Buffer: {buffer} feet")
-        click.echo(f"Boundary type: {boundary_type}")
-        click.echo(f"Point style: {point_style}")
-        click.echo(f"Grid name: {grid_name}")
-        click.echo("")
-        click.echo("Note: This command requires complex polygon processing and grid generation.")
-        click.echo("The full implementation from flexible_gps_grid.py can be integrated as needed.")
-        click.echo("Core functionality: Generate grid points within boundaries using shapely and alphashape.")
+        try:
+            # Generate GPS grid
+            generate_gps_grid(
+                input_file=Path(input_file),
+                output_file=Path(output_file),
+                input_type=input_type,
+                spacing=spacing,
+                buffer=buffer,
+                boundary_type=boundary_type,
+                point_style=point_style,
+                grid_name=grid_name,
+                progress_callback=None
+            )
+                
+        except TopoConvertError as e:
+            click.echo(f"Error: {e}", err=True)
+            raise click.ClickException(str(e))
+        except Exception as e:
+            click.echo(f"Unexpected error: {e}", err=True)
+            raise click.ClickException(f"GPS grid generation failed: {e}")

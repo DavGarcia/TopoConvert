@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Callable
 
 import click
 import ezdxf
+from ezdxf.enums import TextEntityAlignment
 from pyproj import Transformer
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
@@ -32,7 +33,8 @@ def convert_kml_contours_to_dxf(
     altitude_tolerance: float = 1e-6,
     translate_to_origin: bool = True,
     target_epsg_feet: bool = False,
-    progress_callback: Optional[Callable] = None
+    progress_callback: Optional[Callable] = None,
+    label_height: float = 6.0
 ) -> None:
     """Convert KML contour LineStrings to DXF format.
     
@@ -82,7 +84,8 @@ def convert_kml_contours_to_dxf(
             altitude_tolerance=altitude_tolerance,
             translate_to_origin=translate_to_origin,
             target_epsg_feet=target_epsg_feet,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
+            label_height=label_height
         )
     except Exception as e:
         raise ProcessingError(f"KML contours conversion failed: {str(e)}") from e
@@ -231,7 +234,8 @@ def _process_kml_contours_conversion(
     altitude_tolerance: float,
     translate_to_origin: bool,
     target_epsg_feet: bool,
-    progress_callback: Optional[Callable]
+    progress_callback: Optional[Callable],
+    label_height: float = 6.0
 ) -> None:
     """Process KML contours conversion - internal implementation."""
     
@@ -350,10 +354,14 @@ def _process_kml_contours_conversion(
             
             if add_labels and xy:
                 mx, my = _midpoint_xy(xy)
-                msp.add_text(
+                label = msp.add_text(
                     f"{round(z_ft, decimals):.{decimals}f} ft",
-                    dxfattribs={"layer": layer_name, "height": 6},
-                ).set_pos((mx, my), align="LEFT")
+                    dxfattribs={"layer": layer_name, "height": label_height},
+                )
+                label.set_placement(
+                    (mx, my, z_ft),
+                    align=TextEntityAlignment.MIDDLE_CENTER
+                )
     
     if progress_callback:
         progress_callback("Saving DXF file", 90)

@@ -335,7 +335,7 @@ def _process_contours(
                         }
                     )
                     label.set_placement(
-                        (mid_x, mid_y),
+                        (mid_x, mid_y, level_value),
                         align=TextEntityAlignment.MIDDLE_CENTER
                     )
     

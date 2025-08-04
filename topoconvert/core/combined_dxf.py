@@ -191,7 +191,7 @@ def _process_csv_merge(
     doc.saveas(str(output_file))
     
     # Print summary
-    click.echo(f"\\nCreated merged DXF: {output_file}")
+    click.echo(f"\nCreated merged DXF: {output_file}")
     click.echo(f"- {len(datasets)} input files")
     click.echo(f"- {total_points} total points")
     click.echo(f"- Global reference point: ({global_min_x:.2f}, {global_min_y:.2f}, {global_min_z:.2f} ft)")

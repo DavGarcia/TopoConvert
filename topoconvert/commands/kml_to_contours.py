@@ -11,18 +11,18 @@ def register(cli):
     @click.argument('input_file', type=click.Path(exists=True))
     @click.argument('output_file', type=click.Path())
     @click.option('--interval', '-i', type=float, default=1.0,
-                  help='Contour interval in feet')
+                  help='Contour interval in feet (default: 1.0)')
     @click.option('--label/--no-label', default=True,
-                  help='Add elevation labels to contours')
+                  help='Add elevation labels to contours (default: label)')
     @click.option('--elevation-units', type=click.Choice(['meters', 'feet']),
                   default='meters',
-                  help='Units of elevation in KML')
+                  help='Units of elevation in KML (default: meters)')
     @click.option('--grid-resolution', type=int, default=100,
-                  help='Grid resolution for interpolation')
+                  help='Grid density for interpolation (100 = 100x100 grid, higher = smoother contours, default: 100)')
     @click.option('--label-height', type=float, default=2.0,
-                  help='Text height for labels')
+                  help='Text size for elevation labels in drawing units (default: 2.0)')
     @click.option('--no-translate', is_flag=True,
-                  help="Don't translate coordinates to origin")
+                  help="Don't translate coordinates to origin (default: translate)")
     def kml_to_contours(input_file, output_file, interval, label, 
                        elevation_units, grid_resolution, label_height, no_translate):
         """Convert KML points to DXF contours.

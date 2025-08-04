@@ -10,31 +10,17 @@ def register(cli):
     @cli.command('kml-contours-to-dxf')
     @click.argument('input_file', type=click.Path(exists=True))
     @click.argument('output_file', type=click.Path())
-    @click.option('--z-source', type=click.Choice(['auto', 'altitude', 'extended']),
-                  default='auto',
-                  help='Where to read contour elevation from')
-    @click.option('--z-units', type=click.Choice(['meters', 'feet']),
+    @click.option('--elevation-units', type=click.Choice(['meters', 'feet']),
                   default='meters',
-                  help='Units of elevation in KML')
-    @click.option('--target-epsg', type=int, default=26914,
-                  help='EPSG code for projection (default: 26914 for UTM Zone 14N)')
-    @click.option('--add-labels', is_flag=True,
-                  help='Add text labels with elevation values')
-    @click.option('--layer-prefix', default='CT_',
-                  help='Prefix for per-elevation layers')
-    @click.option('--decimals', type=int, default=1,
-                  help='Decimal places for elevation text and layer names')
-    @click.option('--z-field', default=None,
-                  help='ExtendedData field name for elevation')
-    @click.option('--altitude-tolerance', type=float, default=1e-6,
-                  help='Tolerance for constant altitude along contour')
+                  help='Units of elevation in KML (default: meters)')
+    @click.option('--label/--no-label', default=True,
+                  help='Add elevation labels to contours (default: label)')
+    @click.option('--label-height', type=float, default=6.0,
+                  help='Text size for elevation labels in drawing units (default: 6.0)')
     @click.option('--translate/--no-translate', default=True,
-                  help='Translate coordinates to origin')
-    @click.option('--target-epsg-feet', is_flag=True,
-                  help='Target EPSG coordinates are in feet')
-    def kml_contours_to_dxf(input_file, output_file, z_source, z_units, target_epsg,
-                           add_labels, layer_prefix, decimals, z_field, 
-                           altitude_tolerance, translate, target_epsg_feet):
+                  help='Translate coordinates to origin (default: translate)')
+    def kml_contours_to_dxf(input_file, output_file, elevation_units,
+                           label, label_height, translate):
         """Convert KML contour LineStrings to DXF format.
         
         Reads KML files with LineString elements representing contour lines.
@@ -45,21 +31,22 @@ def register(cli):
         OUTPUT_FILE: Path to output DXF file
         """
         try:
-            # Convert KML contours to DXF
+            # Convert KML contours to DXF with sensible defaults
             convert_kml_contours_to_dxf(
                 input_file=Path(input_file),
                 output_file=Path(output_file),
-                z_source=z_source,
-                z_units=z_units,
-                target_epsg=target_epsg,
-                add_labels=add_labels,
-                layer_prefix=layer_prefix,
-                decimals=decimals,
-                z_field=z_field,
-                altitude_tolerance=altitude_tolerance,
+                z_source='auto',  # Auto-detect elevation source
+                z_units=elevation_units,
+                target_epsg=26914,  # NAD83 / UTM Zone 14N
+                add_labels=label,
+                layer_prefix='CT_',
+                decimals=1,
+                z_field=None,  # Auto-detect
+                altitude_tolerance=1e-6,
                 translate_to_origin=translate,
-                target_epsg_feet=target_epsg_feet,
-                progress_callback=None
+                target_epsg_feet=False,
+                progress_callback=None,
+                label_height=label_height
             )
                 
         except TopoConvertError as e:
