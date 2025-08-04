@@ -14,6 +14,7 @@ from scipy.spatial import Delaunay
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
+from topoconvert.utils.projection import get_target_crs, get_transformer
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -31,6 +32,8 @@ def generate_mesh(
     mesh_color: int = 8,
     add_wireframe: bool = False,
     wireframe_color: int = 7,
+    target_epsg: Optional[int] = None,
+    wgs84: bool = False,
     progress_callback: Optional[Callable] = None
 ) -> None:
     """Generate 3D TIN mesh from KML point data.
@@ -45,6 +48,8 @@ def generate_mesh(
         mesh_color: AutoCAD color index for mesh faces
         add_wireframe: Whether to add wireframe edges
         wireframe_color: AutoCAD color index for wireframe
+        target_epsg: Target EPSG code for projection (default: auto-detect UTM)
+        wgs84: Keep coordinates in WGS84 (no projection)
         progress_callback: Optional callback for progress updates
     
     Raises:
@@ -75,6 +80,8 @@ def generate_mesh(
             mesh_color=mesh_color,
             add_wireframe=add_wireframe,
             wireframe_color=wireframe_color,
+            target_epsg=target_epsg,
+            wgs84=wgs84,
             progress_callback=progress_callback
         )
     except Exception as e:
@@ -223,6 +230,8 @@ def _process_mesh_generation(
     mesh_color: int,
     add_wireframe: bool,
     wireframe_color: int,
+    target_epsg: Optional[int],
+    wgs84: bool,
     progress_callback: Optional[Callable]
 ) -> None:
     """Process mesh generation - internal implementation."""
@@ -245,8 +254,15 @@ def _process_mesh_generation(
     if progress_callback:
         progress_callback("Projecting coordinates", 20)
     
-    # Setup projection: WGS84 -> NAD83 / UTM Zone 14N
-    transformer = Transformer.from_crs("EPSG:4326", "EPSG:26914", always_xy=True)
+    # Determine target CRS
+    if kml_points:
+        sample_point = (kml_points[0][0], kml_points[0][1])
+        target_crs = get_target_crs(target_epsg, wgs84, sample_point)
+    else:
+        raise ProcessingError("No points found in KML file")
+    
+    # Setup projection
+    transformer = get_transformer(4326, target_crs)
     
     # Convert points to local coordinates
     x_vals_ft = []
@@ -254,12 +270,17 @@ def _process_mesh_generation(
     z_vals_ft = []
     
     for lon, lat, elev in kml_points:
-        # Project to UTM (meters)
-        x_m, y_m = transformer.transform(lon, lat)
+        # Project coordinates
+        x_proj, y_proj = transformer.transform(lon, lat)
         
-        # Convert to feet
-        x_ft = x_m * M_TO_FT
-        y_ft = y_m * M_TO_FT
+        # Convert to feet if projected (UTM is in meters)
+        if not wgs84:
+            x_ft = x_proj * M_TO_FT
+            y_ft = y_proj * M_TO_FT
+        else:
+            # Keep in degrees for WGS84
+            x_ft = x_proj
+            y_ft = y_proj
         
         # Handle elevation units
         if elevation_units == "meters":
@@ -327,7 +348,13 @@ def _process_mesh_generation(
         else:
             click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
     
-    click.echo(f"- Coordinates in feet (NAD83 / UTM Zone 14N projected)")
+    # Output coordinate system info
+    if wgs84:
+        click.echo("- Coordinates in degrees (WGS84)")
+    elif target_epsg:
+        click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
+    else:
+        click.echo("- Coordinates in feet (auto-detected UTM zone)")
     
     # Print coordinate ranges
     if x_local and y_local and z_local:

@@ -14,6 +14,7 @@ from pyproj import Transformer
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
+from topoconvert.utils.projection import get_target_crs, get_transformer
 
 
 M_TO_FT = 3.28084
@@ -25,7 +26,7 @@ def convert_kml_contours_to_dxf(
     output_file: Path,
     z_source: str = 'auto',
     z_units: str = 'meters',
-    target_epsg: Optional[int] = 26914,
+    target_epsg: Optional[int] = None,
     add_labels: bool = False,
     layer_prefix: str = 'CT_',
     decimals: int = 1,
@@ -34,7 +35,8 @@ def convert_kml_contours_to_dxf(
     translate_to_origin: bool = True,
     target_epsg_feet: bool = False,
     progress_callback: Optional[Callable] = None,
-    label_height: float = 6.0
+    label_height: float = 6.0,
+    wgs84: bool = False
 ) -> None:
     """Convert KML contour LineStrings to DXF format.
     
@@ -43,7 +45,7 @@ def convert_kml_contours_to_dxf(
         output_file: Path to output DXF file
         z_source: Where to read contour elevation ('auto', 'altitude', 'extended')
         z_units: Units of Z in KML ('meters' or 'feet')
-        target_epsg: EPSG code for projection (default: 26914 for UTM Zone 14N)
+        target_epsg: EPSG code for projection (default: auto-detect UTM)
         add_labels: Add text labels with elevation
         layer_prefix: Prefix for per-elevation layers
         decimals: Decimal places for elevation text and layer names
@@ -52,6 +54,8 @@ def convert_kml_contours_to_dxf(
         translate_to_origin: Translate coordinates to origin
         target_epsg_feet: Whether target EPSG coordinates are in feet
         progress_callback: Optional callback for progress updates
+        label_height: Height of text labels in drawing units
+        wgs84: Keep coordinates in WGS84 (no projection)
     
     Raises:
         FileNotFoundError: If input file doesn't exist
@@ -85,7 +89,8 @@ def convert_kml_contours_to_dxf(
             translate_to_origin=translate_to_origin,
             target_epsg_feet=target_epsg_feet,
             progress_callback=progress_callback,
-            label_height=label_height
+            label_height=label_height,
+            wgs84=wgs84
         )
     except Exception as e:
         raise ProcessingError(f"KML contours conversion failed: {str(e)}") from e
@@ -209,13 +214,13 @@ def _build_transformer(target_epsg: Optional[int]) -> Optional[Transformer]:
 
 
 def _project_xy(transformer: Optional[Transformer], lon: float, lat: float, 
-               to_feet: bool = False) -> Tuple[float, float]:
+               to_feet: bool = False, wgs84: bool = False) -> Tuple[float, float]:
     """Project coordinates using transformer"""
     if transformer is None:
         return (lon, lat)
     x, y = transformer.transform(lon, lat)
-    if to_feet:
-        # Convert from meters to feet
+    if to_feet and not wgs84:
+        # Convert from meters to feet only for projected coordinates
         x *= M_TO_FT
         y *= M_TO_FT
     return (x, y)
@@ -235,7 +240,8 @@ def _process_kml_contours_conversion(
     translate_to_origin: bool,
     target_epsg_feet: bool,
     progress_callback: Optional[Callable],
-    label_height: float = 6.0
+    label_height: float = 6.0,
+    wgs84: bool = False
 ) -> None:
     """Process KML contours conversion - internal implementation."""
     
@@ -253,7 +259,23 @@ def _process_kml_contours_conversion(
     if progress_callback:
         progress_callback("Setting up coordinate transformation", 10)
     
-    transformer = _build_transformer(target_epsg)
+    # Find first coordinate to determine UTM zone if needed
+    sample_point = None
+    if not wgs84 and target_epsg is None:
+        for pm in root.findall(".//kml:Placemark", NS):
+            lines = _collect_linestrings(pm)
+            if lines and lines[0]:
+                lon, lat, _ = lines[0][0]
+                sample_point = (lon, lat)
+                break
+    
+    # Determine target CRS
+    if wgs84:
+        target_crs = get_target_crs(None, True, (0, 0))  # WGS84
+        transformer = None  # No transformation needed
+    else:
+        target_crs = get_target_crs(target_epsg, False, sample_point or (0, 0))
+        transformer = get_transformer(4326, target_crs)
     
     # Create DXF document
     doc = ezdxf.new(setup=True)
@@ -279,7 +301,7 @@ def _process_kml_contours_conversion(
             lines = _collect_linestrings(pm)
             for pts in lines:
                 for lon, lat, _z in pts:
-                    x, y = _project_xy(transformer, lon, lat, target_epsg_feet)
+                    x, y = _project_xy(transformer, lon, lat, target_epsg_feet, wgs84)
                     all_points.append((x, y))
     
     # Determine reference point (use center of bounds)
@@ -341,7 +363,7 @@ def _process_kml_contours_conversion(
             # Project XY and translate to local origin
             xy = []
             for lon, lat, _z in pts:
-                x, y = _project_xy(transformer, lon, lat, target_epsg_feet)
+                x, y = _project_xy(transformer, lon, lat, target_epsg_feet, wgs84)
                 # Translate to local origin
                 x_local = x - ref_x
                 y_local = y - ref_y

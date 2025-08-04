@@ -9,7 +9,7 @@ def register(cli):
     """Register the kml-to-dxf-mesh command with the CLI."""
     @cli.command('kml-to-dxf-mesh')
     @click.argument('input_file', type=click.Path(exists=True))
-    @click.argument('output_file', type=click.Path())
+    @click.argument('output_file', type=click.Path(), required=False)
     @click.option('--elevation-units', type=click.Choice(['meters', 'feet']),
                   default='meters',
                   help='Units of elevation in KML (default: meters)')
@@ -25,9 +25,13 @@ def register(cli):
                   help='Skip wireframe edges (default: include wireframe)')
     @click.option('--wireframe-color', type=int, default=7,
                   help='AutoCAD color index for wireframe (default: 7)')
+    @click.option('--target-epsg', type=int, default=None,
+                  help='Target EPSG code for projection (default: auto-detect UTM)')
+    @click.option('--wgs84', is_flag=True,
+                  help='Keep coordinates in WGS84 (no projection)')
     def kml_to_mesh(input_file, output_file, elevation_units, translate,
                    use_reference_point, layer_name, mesh_color, 
-                   no_wireframe, wireframe_color):
+                   no_wireframe, wireframe_color, target_epsg, wgs84):
         """Generate 3D TIN mesh from KML points.
         
         Creates a Delaunay triangulated irregular network (TIN) mesh from KML point data
@@ -35,13 +39,25 @@ def register(cli):
         for better visualization.
         
         INPUT_FILE: Path to input KML file
-        OUTPUT_FILE: Path to output DXF file
+        OUTPUT_FILE: Path to output DXF file (optional, defaults to input name with .dxf)
         """
+        # Validate mutual exclusivity
+        if target_epsg and wgs84:
+            raise click.ClickException("Cannot use both --target-epsg and --wgs84")
+        
         try:
+            input_path = Path(input_file)
+            
+            # Use provided output file or create default name
+            if output_file is None:
+                output_path = input_path.with_suffix('.dxf')
+            else:
+                output_path = Path(output_file)
+            
             # Generate mesh
             generate_mesh(
-                input_file=Path(input_file),
-                output_file=Path(output_file),
+                input_file=input_path,
+                output_file=output_path,
                 elevation_units=elevation_units,
                 translate_to_origin=translate,
                 use_reference_point=use_reference_point,
@@ -49,6 +65,8 @@ def register(cli):
                 mesh_color=mesh_color,
                 add_wireframe=not no_wireframe,  # Invert the flag since wireframe is now default
                 wireframe_color=wireframe_color,
+                target_epsg=target_epsg,
+                wgs84=wgs84,
                 progress_callback=None
             )
                 

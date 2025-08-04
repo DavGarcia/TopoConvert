@@ -12,12 +12,16 @@ def register(cli):
                     type=click.Path(exists=True))
     @click.option('--output', '-o', type=click.Path(), required=True,
                   help='Output DXF file path')
-    def combined_dxf(csv_files, output):
+    @click.option('--target-epsg', type=int, default=None,
+                  help='Target EPSG code for projection (default: auto-detect UTM)')
+    @click.option('--wgs84', is_flag=True,
+                  help='Keep coordinates in WGS84 (no projection)')
+    def combined_dxf(csv_files, output, target_epsg, wgs84):
         """Merge CSV files to DXF with separate layers.
         
         Each CSV file is placed on its own layer with a unique color for easy
-        identification. Points are projected to NAD83/UTM Zone 14N and translated
-        to a common origin for accurate spatial alignment.
+        identification. By default, points are projected to the auto-detected local UTM zone
+        and translated to a common origin for accurate spatial alignment.
         
         CSV_FILES: Paths to input CSV files (multiple files)
         """
@@ -25,10 +29,16 @@ def register(cli):
             # Convert to Path objects
             csv_paths = [Path(f) for f in csv_files]
             
+            # Validate projection options
+            if target_epsg and wgs84:
+                raise click.ClickException("Cannot use both --target-epsg and --wgs84")
+            
             # Merge CSV files to DXF
             merge_csv_to_dxf(
                 csv_files=csv_paths,
                 output_file=Path(output),
+                target_epsg=target_epsg,
+                wgs84=wgs84,
                 progress_callback=None
             )
                 

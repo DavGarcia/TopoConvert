@@ -9,7 +9,7 @@ def register(cli):
     """Register the kml-to-dxf-contours command with the CLI."""
     @cli.command('kml-to-dxf-contours')
     @click.argument('input_file', type=click.Path(exists=True))
-    @click.argument('output_file', type=click.Path())
+    @click.argument('output_file', type=click.Path(), required=False)
     @click.option('--interval', '-i', type=float, default=1.0,
                   help='Contour interval in feet (default: 1.0)')
     @click.option('--label/--no-label', default=True,
@@ -23,24 +23,43 @@ def register(cli):
                   help='Text size for elevation labels in drawing units (default: 2.0)')
     @click.option('--no-translate', is_flag=True,
                   help="Don't translate coordinates to origin (default: translate)")
+    @click.option('--target-epsg', type=int, default=None,
+                  help='Target EPSG code for projection (default: auto-detect UTM)')
+    @click.option('--wgs84', is_flag=True,
+                  help='Keep coordinates in WGS84 (no projection)')
     def kml_to_contours(input_file, output_file, interval, label, 
-                       elevation_units, grid_resolution, label_height, no_translate):
+                       elevation_units, grid_resolution, label_height, no_translate,
+                       target_epsg, wgs84):
         """Convert KML points to DXF contours.
         
         INPUT_FILE: Path to input KML file containing point data
         OUTPUT_FILE: Path to output DXF file
         """
+        # Validate mutual exclusivity
+        if target_epsg and wgs84:
+            raise click.ClickException("Cannot use both --target-epsg and --wgs84")
+        
         try:
+            input_path = Path(input_file)
+            
+            # Use provided output file or create default name
+            if output_file is None:
+                output_path = input_path.with_suffix('.dxf')
+            else:
+                output_path = Path(output_file)
+            
             # Generate contours
             generate_contours(
-                input_file=Path(input_file),
-                output_file=Path(output_file),
+                input_file=input_path,
+                output_file=output_path,
                 elevation_units=elevation_units,
                 contour_interval=interval,
                 grid_resolution=grid_resolution,
                 add_labels=label,
                 label_height=label_height,
                 translate_to_origin=not no_translate,
+                target_epsg=target_epsg,
+                wgs84=wgs84,
                 progress_callback=None
             )
                 

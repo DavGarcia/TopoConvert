@@ -13,6 +13,7 @@ from pyproj import Transformer
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
+from topoconvert.utils.projection import get_target_crs, get_transformer
 
 
 M_TO_FT = 3.28084
@@ -21,6 +22,8 @@ M_TO_FT = 3.28084
 def merge_csv_to_dxf(
     csv_files: List[Path],
     output_file: Path,
+    target_epsg: Optional[int] = None,
+    wgs84: bool = False,
     progress_callback: Optional[Callable] = None
 ) -> None:
     """Merge multiple CSV files into a single DXF with 3D points.
@@ -31,6 +34,8 @@ def merge_csv_to_dxf(
     Args:
         csv_files: List of paths to input CSV files
         output_file: Path to output DXF file
+        target_epsg: Target EPSG code for projection (default: auto-detect UTM)
+        wgs84: Keep coordinates in WGS84 (no projection)
         progress_callback: Optional callback for progress updates
     
     Raises:
@@ -52,13 +57,15 @@ def merge_csv_to_dxf(
         _process_csv_merge(
             csv_files=validated_files,
             output_file=output_file,
+            target_epsg=target_epsg,
+            wgs84=wgs84,
             progress_callback=progress_callback
         )
     except Exception as e:
         raise ProcessingError(f"CSV merge failed: {str(e)}") from e
 
 
-def _read_and_transform_csv(csv_file: Path, transformer: Transformer) -> pd.DataFrame:
+def _read_and_transform_csv(csv_file: Path, transformer: Transformer, wgs84: bool = False) -> pd.DataFrame:
     """Read CSV file and transform coordinates to feet"""
     try:
         df = pd.read_csv(str(csv_file))
@@ -76,12 +83,19 @@ def _read_and_transform_csv(csv_file: Path, transformer: Transformer) -> pd.Data
     z_vals_ft = []
     
     for lat, lon, elev_m in zip(df["Latitude"], df["Longitude"], df["Elevation"]):
-        # Convert lat/lon from WGS84 to NAD83/UTM14N in meters
-        x_m, y_m = transformer.transform(lon, lat)
-        # Convert X, Y, and Elevation to feet
-        x_ft = x_m * M_TO_FT
-        y_ft = y_m * M_TO_FT
-        z_ft = elev_m * M_TO_FT
+        # Transform coordinates
+        x_proj, y_proj = transformer.transform(lon, lat)
+        
+        # Convert to feet if projected (UTM is in meters)
+        if not wgs84:
+            x_ft = x_proj * M_TO_FT
+            y_ft = y_proj * M_TO_FT
+            z_ft = elev_m * M_TO_FT
+        else:
+            # Keep in degrees for WGS84
+            x_ft = x_proj
+            y_ft = y_proj
+            z_ft = elev_m
         
         x_vals_ft.append(x_ft)
         y_vals_ft.append(y_ft)
@@ -97,6 +111,8 @@ def _read_and_transform_csv(csv_file: Path, transformer: Transformer) -> pd.Data
 def _process_csv_merge(
     csv_files: List[Path],
     output_file: Path,
+    target_epsg: Optional[int],
+    wgs84: bool,
     progress_callback: Optional[Callable]
 ) -> None:
     """Process CSV merge - internal implementation."""
@@ -105,8 +121,16 @@ def _process_csv_merge(
     if progress_callback:
         progress_callback("Setting up coordinate transformation", 0)
     
-    # Setup WGS84 -> NAD83 / UTM Zone 14N in meters
-    transformer = Transformer.from_crs("EPSG:4326", "EPSG:26914", always_xy=True)
+    # Determine target CRS using first CSV file's first point
+    sample_df = pd.read_csv(str(csv_files[0]))
+    if 'Latitude' in sample_df.columns and 'Longitude' in sample_df.columns and len(sample_df) > 0:
+        sample_point = (sample_df['Longitude'].iloc[0], sample_df['Latitude'].iloc[0])
+        target_crs = get_target_crs(target_epsg, wgs84, sample_point)
+    else:
+        raise ProcessingError("No valid coordinates found in first CSV file")
+    
+    # Setup transformer
+    transformer = get_transformer(4326, target_crs)
     
     # We'll accumulate all X/Y/Z values to find the global min corner
     all_x, all_y, all_z = [], [], []
@@ -120,7 +144,7 @@ def _process_csv_merge(
         if progress_callback:
             progress_callback(f"Processing {csv_file.name}", int(20 + (i / total_files) * 40))
         
-        df = _read_and_transform_csv(csv_file, transformer)
+        df = _read_and_transform_csv(csv_file, transformer, wgs84)
         
         # Accumulate for global min
         all_x.extend(df["X_ft"])
@@ -195,7 +219,13 @@ def _process_csv_merge(
     click.echo(f"- {len(datasets)} input files")
     click.echo(f"- {total_points} total points")
     click.echo(f"- Global reference point: ({global_min_x:.2f}, {global_min_y:.2f}, {global_min_z:.2f} ft)")
-    click.echo(f"- Coordinates in feet (NAD83 / UTM Zone 14N projected)")
+    # Output coordinate system info
+    if wgs84:
+        click.echo("- Coordinates in degrees (WGS84)")
+    elif target_epsg:
+        click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
+    else:
+        click.echo("- Coordinates in feet (auto-detected UTM zone)")
     
     # Print coordinate ranges after translation
     if all_x and all_y and all_z:

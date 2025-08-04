@@ -19,8 +19,12 @@ def register(cli):
                   help='Text size for elevation labels in drawing units (default: 6.0)')
     @click.option('--translate/--no-translate', default=True,
                   help='Translate coordinates to origin (default: translate)')
+    @click.option('--target-epsg', type=int, default=None,
+                  help='Target EPSG code for projection (default: auto-detect UTM)')
+    @click.option('--wgs84', is_flag=True,
+                  help='Keep coordinates in WGS84 (no projection)')
     def kml_contours_to_dxf(input_file, output_file, elevation_units,
-                           label, label_height, translate):
+                           label, label_height, translate, target_epsg, wgs84):
         """Convert KML contour LineStrings to DXF format.
         
         Reads KML files with LineString elements representing contour lines.
@@ -31,13 +35,17 @@ def register(cli):
         OUTPUT_FILE: Path to output DXF file
         """
         try:
+            # Validate projection options
+            if target_epsg and wgs84:
+                raise click.ClickException("Cannot use both --target-epsg and --wgs84")
+                
             # Convert KML contours to DXF with sensible defaults
             convert_kml_contours_to_dxf(
                 input_file=Path(input_file),
                 output_file=Path(output_file),
                 z_source='auto',  # Auto-detect elevation source
                 z_units=elevation_units,
-                target_epsg=26914,  # NAD83 / UTM Zone 14N
+                target_epsg=target_epsg,
                 add_labels=label,
                 layer_prefix='CT_',
                 decimals=1,
@@ -46,7 +54,8 @@ def register(cli):
                 translate_to_origin=translate,
                 target_epsg_feet=False,
                 progress_callback=None,
-                label_height=label_height
+                label_height=label_height,
+                wgs84=wgs84
             )
                 
         except TopoConvertError as e:

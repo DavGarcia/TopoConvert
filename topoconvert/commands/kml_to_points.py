@@ -23,8 +23,12 @@ def register(cli):
                   help='Layer name for DXF output (default: GPS_POINTS)')
     @click.option('--point-color', type=int, default=7,
                   help='AutoCAD color index for DXF points (default: 7)')
+    @click.option('--target-epsg', type=int, default=None,
+                  help='Target EPSG code for projection (DXF only, default: auto-detect UTM)')
+    @click.option('--wgs84', is_flag=True,
+                  help='Keep coordinates in WGS84 (DXF only, no projection)')
     def kml_to_points(input_file, output_file, format, elevation_units, translate,
-                     use_reference_point, layer_name, point_color):
+                     use_reference_point, layer_name, point_color, target_epsg, wgs84):
         """Extract point data from KML files.
         
         Extract points from KML and save in various formats including DXF 3D point cloud,
@@ -48,6 +52,10 @@ def register(cli):
             else:
                 output_path = Path(output_file)
             
+            # Validate projection options for DXF format
+            if format == 'dxf' and target_epsg and wgs84:
+                raise click.ClickException("Cannot use both --target-epsg and --wgs84")
+            
             # Extract points
             extract_points(
                 input_file=input_path,
@@ -58,6 +66,8 @@ def register(cli):
                 use_reference_point=use_reference_point,
                 layer_name=layer_name,
                 point_color=point_color,
+                target_epsg=target_epsg if format == 'dxf' else None,
+                wgs84=wgs84 if format == 'dxf' else False,
                 progress_callback=None
             )
                 
