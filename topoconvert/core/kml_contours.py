@@ -395,15 +395,21 @@ def _process_kml_contours_conversion(
     click.echo(f"- {count} contour polylines")
     click.echo(f"- Missing elevation placemarks skipped: {missing_z}")
     
-    if target_epsg:
+    if wgs84:
+        click.echo("- No projection applied (XY: lon/lat degrees, Z: feet)")
+    elif target_epsg:
         units_str = "feet" if target_epsg_feet else "target CRS units"
         click.echo(f"- Projected to EPSG:{target_epsg}")
         click.echo(f"- XY units: {units_str}, Z units: feet")
     else:
-        click.echo("- No projection applied (XY: lon/lat degrees, Z: feet)")
+        click.echo("- Projected to auto-detected UTM zone")
+        click.echo("- XY units: feet, Z units: feet")
     
     if translate_to_origin and all_points:
-        click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f})")
+        if wgs84:
+            click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f})")
+        else:
+            click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f})")
     
     if progress_callback:
         progress_callback("Complete", 100)

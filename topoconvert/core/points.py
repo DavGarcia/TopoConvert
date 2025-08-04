@@ -291,7 +291,10 @@ def _process_points_extraction(
             y_ft = y_proj
         
         # Handle elevation units
-        if elevation_units == "meters":
+        if wgs84:
+            # Keep elevation in original units when using WGS84
+            z_ft = elev
+        elif elevation_units == "meters":
             z_ft = elev * M_TO_FT
         else:  # already in feet
             z_ft = elev
@@ -339,10 +342,16 @@ def _process_points_extraction(
     
     if translate_to_origin:
         if use_reference_point:
-            click.echo(f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+            if wgs84:
+                click.echo(f"- Reference point (excluded): ({ref_x:.6f}, {ref_y:.6f}, {ref_z:.2f})")
+            else:
+                click.echo(f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
             click.echo(f"- First point translated to origin")
         else:
-            click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+            if wgs84:
+                click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f}, {ref_z:.2f})")
+            else:
+                click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
     
     # Output coordinate system info
     if wgs84:
@@ -354,9 +363,15 @@ def _process_points_extraction(
     
     # Print coordinate ranges
     if x_local and y_local and z_local:
-        click.echo(f"- X range: {min(x_local):.1f} to {max(x_local):.1f} ft")
-        click.echo(f"- Y range: {min(y_local):.1f} to {max(y_local):.1f} ft")
-        click.echo(f"- Z range: {min(z_local):.1f} to {max(z_local):.1f} ft")
+        if wgs84:
+            click.echo(f"- X range: {min(x_local):.6f} to {max(x_local):.6f} degrees")
+            click.echo(f"- Y range: {min(y_local):.6f} to {max(y_local):.6f} degrees")
+            z_unit = "m" if elevation_units == "meters" else "ft"
+            click.echo(f"- Z range: {min(z_local):.1f} to {max(z_local):.1f} {z_unit}")
+        else:
+            click.echo(f"- X range: {min(x_local):.1f} to {max(x_local):.1f} ft")
+            click.echo(f"- Y range: {min(y_local):.1f} to {max(y_local):.1f} ft")
+            click.echo(f"- Z range: {min(z_local):.1f} to {max(z_local):.1f} ft")
     
     if progress_callback:
         progress_callback("Complete", 100)

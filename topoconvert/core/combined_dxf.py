@@ -218,7 +218,10 @@ def _process_csv_merge(
     click.echo(f"\nCreated merged DXF: {output_file}")
     click.echo(f"- {len(datasets)} input files")
     click.echo(f"- {total_points} total points")
-    click.echo(f"- Global reference point: ({global_min_x:.2f}, {global_min_y:.2f}, {global_min_z:.2f} ft)")
+    if wgs84:
+        click.echo(f"- Global reference point: ({global_min_x:.6f}, {global_min_y:.6f}, {global_min_z:.2f})")
+    else:
+        click.echo(f"- Global reference point: ({global_min_x:.2f}, {global_min_y:.2f}, {global_min_z:.2f} ft)")
     # Output coordinate system info
     if wgs84:
         click.echo("- Coordinates in degrees (WGS84)")
@@ -232,9 +235,14 @@ def _process_csv_merge(
         x_range = max(all_x) - global_min_x
         y_range = max(all_y) - global_min_y
         z_range = max(all_z) - global_min_z
-        click.echo(f"- X range: 0.0 to {x_range:.1f} ft")
-        click.echo(f"- Y range: 0.0 to {y_range:.1f} ft")
-        click.echo(f"- Z range: 0.0 to {z_range:.1f} ft")
+        if wgs84:
+            click.echo(f"- X range: 0.0 to {x_range:.6f} degrees")
+            click.echo(f"- Y range: 0.0 to {y_range:.6f} degrees")
+            click.echo(f"- Z range: 0.0 to {z_range:.1f} m")  # CSV elevations are always in meters
+        else:
+            click.echo(f"- X range: 0.0 to {x_range:.1f} ft")
+            click.echo(f"- Y range: 0.0 to {y_range:.1f} ft")
+            click.echo(f"- Z range: 0.0 to {z_range:.1f} ft")
     
     if progress_callback:
         progress_callback("Complete", 100)
