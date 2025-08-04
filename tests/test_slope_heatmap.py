@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 
 from topoconvert.cli import cli
-from topoconvert.core.slope_heatmap import generate_slope_heatmap, _extract_points, _calculate_slope, _parse_coordinates
+from topoconvert.core.slope_heatmap import generate_slope_heatmap, _extract_points, _calculate_slope, _parse_coordinates, _create_target_colormap
 from topoconvert.core.exceptions import TopoConvertError, ProcessingError, FileFormatError
 
 
@@ -676,3 +676,222 @@ class TestSlopeHeatmapUtilityFunctions:
         # Should have significant slopes
         max_slope = np.nanmax(slope)
         assert max_slope > 10.0  # Should be steep
+
+
+class TestSlopeComputationFunctions:
+    """Test cases for pure computation functions (matplotlib-independent)."""
+    
+    def test_compute_slope_from_points_basic(self):
+        """Test basic slope computation from points."""
+        pytest.skip("compute_slope_from_points not yet implemented")
+        
+        points = [
+            (-122.0, 37.0, 100.0),  # 100 meters
+            (-122.001, 37.0, 101.0),  # 101 meters
+            (-122.0, 37.001, 102.0),  # 102 meters
+        ]
+        
+        # Test meters (should convert to feet internally)
+        result_m = compute_slope_from_points(
+            points=points,
+            elevation_units='meters'
+        )
+        
+        # Test feet (no conversion)
+        points_ft = [
+            (-122.0, 37.0, 328.084),  # ~100m in feet
+            (-122.001, 37.0, 331.365),  # ~101m in feet
+            (-122.0, 37.001, 334.646),  # ~102m in feet
+        ]
+        result_ft = compute_slope_from_points(
+            points=points_ft,
+            elevation_units='feet'
+        )
+        
+        # Results should be similar (allowing for conversion differences)
+        assert result_m['slope_grid'].shape == result_ft['slope_grid'].shape
+    
+    def test_compute_slope_from_points_with_smoothing(self):
+        """Test computation with gaussian smoothing."""
+        pytest.skip("compute_slope_from_points not yet implemented")
+        
+        points = [
+            (-122.0, 37.0, 100.0),
+            (-122.001, 37.0, 150.0),  # Sharp elevation change
+            (-122.0, 37.001, 110.0),
+            (-122.001, 37.001, 160.0),
+        ]
+        
+        # Without smoothing
+        result_no_smooth = compute_slope_from_points(
+            points=points,
+            smooth=0.0
+        )
+        
+        # With smoothing
+        result_smooth = compute_slope_from_points(
+            points=points,
+            smooth=2.0
+        )
+        
+        # Smoothed result should have different (typically lower) max slope
+        assert result_smooth['slope_grid'].shape == result_no_smooth['slope_grid'].shape
+        # The exact relationship depends on the data, but they should be different
+        smooth_max = np.nanmax(result_smooth['slope_grid'])
+        no_smooth_max = np.nanmax(result_no_smooth['slope_grid'])
+        assert smooth_max != no_smooth_max
+    
+    def test_compute_slope_from_points_insufficient_data(self):
+        """Test error handling for insufficient points."""
+        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.exceptions import ProcessingError
+        
+        # Too few points
+        points = [
+            (-122.0, 37.0, 100.0),
+            (-122.001, 37.0, 110.0),
+        ]  # Only 2 points
+        
+        with pytest.raises(ProcessingError, match="Need at least 3 points"):
+            compute_slope_from_points(points=points)
+    
+    def test_compute_slope_from_points_empty_data(self):
+        """Test error handling for empty points."""
+        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.exceptions import ProcessingError
+        
+        with pytest.raises(ProcessingError, match="No points provided"):
+            compute_slope_from_points(points=[])
+    
+    def test_compute_slope_from_points_synthetic_patterns(self):
+        """Test computation with known slope patterns."""
+        pytest.skip("compute_slope_from_points not yet implemented")
+        
+        # Create a simple inclined plane (should have uniform slope)
+        points = []
+        for i in range(5):
+            for j in range(5):
+                lon = -122.0 + i * 0.001
+                lat = 37.0 + j * 0.001
+                elev = 100.0 + i * 10.0 + j * 5.0  # Linear elevation increase
+                points.append((lon, lat, elev))
+        
+        result = compute_slope_from_points(
+            points=points,
+            grid_resolution=20,
+            slope_units='degrees'
+        )
+        
+        # For a linear incline, slopes should be relatively uniform
+        valid_slopes = result['slope_grid'][~np.isnan(result['slope_grid'])]
+        if len(valid_slopes) > 0:
+            slope_std = np.std(valid_slopes)
+            # Standard deviation should be reasonable for uniform slope
+            # (allowing for edge effects and interpolation artifacts)
+            assert slope_std < 20.0  # Degrees
+
+
+class TestTargetColormap:
+    """Test cases for target colormap functionality."""
+    
+    def test_create_target_colormap_returns_tuple(self):
+        """Test that _create_target_colormap returns (colormap, normalizer) tuple."""
+        target_slope = 15.0
+        vmin = 0.0
+        vmax = 30.0
+        
+        result = _create_target_colormap(target_slope, vmin, vmax)
+        
+        # Should return a tuple
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        
+        cmap, norm = result
+        
+        # Check colormap
+        from matplotlib.colors import LinearSegmentedColormap, Normalize
+        assert isinstance(cmap, LinearSegmentedColormap)
+        
+        # Check normalizer
+        assert isinstance(norm, Normalize)
+        assert norm.vmin == vmin
+        assert norm.vmax == vmax
+    
+    def test_create_target_colormap_target_at_middle(self):
+        """Test target colormap when target is in the middle of range."""
+        target_slope = 15.0
+        vmin = 0.0
+        vmax = 30.0
+        
+        cmap, norm = _create_target_colormap(target_slope, vmin, vmax)
+        
+        # Verify the normalizer range
+        assert norm.vmin == vmin
+        assert norm.vmax == vmax
+        
+        # Test that colormap produces expected colors at key points
+        # At vmin (0) should be green-ish
+        low_color = cmap(norm(vmin))
+        # At target (15) should be yellow-ish
+        target_color = cmap(norm(target_slope))  
+        # At vmax (30) should be red-ish
+        high_color = cmap(norm(vmax))
+        
+        # Yellow has high red and green, low blue
+        assert target_color[0] > 0.5  # Red component
+        assert target_color[1] > 0.5  # Green component
+        assert target_color[2] < 0.5  # Blue component
+    
+    def test_create_target_colormap_target_at_edges(self):
+        """Test target colormap when target is at the edges of range."""
+        vmin = 0.0
+        vmax = 30.0
+        
+        # Target at minimum
+        target_at_min = vmin
+        cmap1, norm1 = _create_target_colormap(target_at_min, vmin, vmax)
+        
+        assert norm1.vmin == vmin
+        assert norm1.vmax == vmax
+        
+        # Target at maximum
+        target_at_max = vmax
+        cmap2, norm2 = _create_target_colormap(target_at_max, vmin, vmax)
+        
+        assert norm2.vmin == vmin
+        assert norm2.vmax == vmax
+    
+    def test_create_target_colormap_clamping_behavior(self):
+        """Test that target values outside range are handled properly."""
+        vmin = 10.0
+        vmax = 20.0
+        
+        # Target below minimum
+        target_below = 5.0
+        cmap1, norm1 = _create_target_colormap(target_below, vmin, vmax)
+        assert norm1.vmin == vmin
+        assert norm1.vmax == vmax
+        
+        # Target above maximum  
+        target_above = 25.0
+        cmap2, norm2 = _create_target_colormap(target_above, vmin, vmax)
+        assert norm2.vmin == vmin
+        assert norm2.vmax == vmax
+    
+    def test_create_target_colormap_different_ranges(self):
+        """Test target colormap with different value ranges."""
+        test_cases = [
+            (5.0, 0.0, 10.0),      # Small range
+            (50.0, 0.0, 100.0),    # Large range  
+            (1.5, 1.0, 2.0),       # Very small range
+            (0.0, -10.0, 10.0),    # Range including negative
+        ]
+        
+        for target, vmin, vmax in test_cases:
+            cmap, norm = _create_target_colormap(target, vmin, vmax)
+            
+            # Should always return valid colormap and normalizer
+            assert cmap is not None
+            assert norm is not None
+            assert norm.vmin == vmin
+            assert norm.vmax == vmax
