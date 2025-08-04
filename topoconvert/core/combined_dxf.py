@@ -65,7 +65,7 @@ def merge_csv_to_dxf(
         raise ProcessingError(f"CSV merge failed: {str(e)}") from e
 
 
-def _read_and_transform_csv(csv_file: Path, transformer: Transformer, wgs84: bool = False) -> pd.DataFrame:
+def _read_and_transform_csv(csv_file: Path, transformer: Transformer, wgs84: bool = False) -> tuple[pd.DataFrame, bool]:
     """Read CSV file and transform coordinates to feet"""
     try:
         df = pd.read_csv(str(csv_file))
@@ -73,16 +73,25 @@ def _read_and_transform_csv(csv_file: Path, transformer: Transformer, wgs84: boo
         raise FileFormatError(f"Error reading CSV file {csv_file}: {e}")
     
     # Check for required columns
-    required_columns = ['Latitude', 'Longitude', 'Elevation']
+    required_columns = ['Latitude', 'Longitude']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         raise FileFormatError(f"Missing columns in {csv_file}: {missing_columns}")
+    
+    # Check if elevation column exists
+    has_elevation = 'Elevation' in df.columns
     
     x_vals_ft = []
     y_vals_ft = []
     z_vals_ft = []
     
-    for lat, lon, elev_m in zip(df["Latitude"], df["Longitude"], df["Elevation"]):
+    # Handle elevation data if available, otherwise use 0.0
+    if has_elevation:
+        elevation_data = df["Elevation"]
+    else:
+        elevation_data = [0.0] * len(df)
+    
+    for lat, lon, elev_m in zip(df["Latitude"], df["Longitude"], elevation_data):
         # Transform coordinates
         x_proj, y_proj = transformer.transform(lon, lat)
         
@@ -105,7 +114,7 @@ def _read_and_transform_csv(csv_file: Path, transformer: Transformer, wgs84: boo
     df["Y_ft"] = y_vals_ft
     df["Z_ft"] = z_vals_ft
     
-    return df
+    return df, has_elevation
 
 
 def _process_csv_merge(
@@ -144,7 +153,7 @@ def _process_csv_merge(
         if progress_callback:
             progress_callback(f"Processing {csv_file.name}", int(20 + (i / total_files) * 40))
         
-        df = _read_and_transform_csv(csv_file, transformer, wgs84)
+        df, has_elevation = _read_and_transform_csv(csv_file, transformer, wgs84)
         
         # Accumulate for global min
         all_x.extend(df["X_ft"])
@@ -154,7 +163,8 @@ def _process_csv_merge(
         basename = csv_file.stem
         datasets.append((basename, df))
         
-        click.echo(f"Processed {csv_file.name}: {len(df)} points")
+        elevation_msg = " (with elevation)" if has_elevation else " (elevation set to 0.0)"
+        click.echo(f"Processed {csv_file.name}: {len(df)} points{elevation_msg}")
     
     if progress_callback:
         progress_callback("Computing coordinate bounds", 60)

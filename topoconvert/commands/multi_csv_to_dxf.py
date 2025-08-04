@@ -23,6 +23,9 @@ def register(cli):
         identification. By default, points are projected to the auto-detected local UTM zone
         and translated to a common origin for accurate spatial alignment.
         
+        CSV files must have Latitude and Longitude columns. If an Elevation column 
+        is present, it will be used; otherwise points will be placed at elevation 0.0.
+        
         CSV_FILES: Paths to input CSV files (multiple files)
         """
         try:
