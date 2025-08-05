@@ -7,13 +7,13 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Tuple, Optional, Callable
 
-import click
 import ezdxf
 from pyproj import Transformer
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.utils.projection import get_target_crs, get_transformer
+from topoconvert.core.result_types import PointExtractionResult
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -33,7 +33,7 @@ def extract_points(
     target_epsg: Optional[int] = None,
     wgs84: bool = False,
     progress_callback: Optional[Callable] = None
-) -> None:
+) -> PointExtractionResult:
     """Extract points from KML and save in specified format.
     
     Args:
