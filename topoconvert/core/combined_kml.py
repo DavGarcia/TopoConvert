@@ -2,7 +2,7 @@
 import click
 import pandas as pd
 from pathlib import Path
-from typing import List, Optional, Callable, Tuple
+from typing import List, Optional, Callable
 from xml.etree import ElementTree as ET
 from xml.dom import minidom
 

@@ -203,27 +203,6 @@ topoconvert multi-csv-to-dxf *.csv --output all_points.dxf --x-column lon --y-co
 topoconvert multi-csv-to-dxf data1.csv data2.csv --output geographic.dxf --wgs84
 ```
 
-### kml-to-csv
-
-Convert KML data to CSV format.
-
-```bash
-topoconvert kml-to-csv INPUT_FILE OUTPUT_FILE [OPTIONS]
-```
-
-**Arguments:**
-- `INPUT_FILE` - Path to input KML file
-- `OUTPUT_FILE` - Path to output CSV file
-
-**Options:**
-- `--include-attributes/--no-attributes` - Include KML attributes in CSV (default: include)
-- `--coordinate-format, -c [separate|wkt]` - Coordinate format in CSV (default: separate)
-
-**Example:**
-```bash
-topoconvert kml-to-csv points.kml data.csv --coordinate-format separate
-```
-
 ### multi-csv-to-kml
 
 Combine multiple CSV files into a single KML file.
@@ -368,7 +347,7 @@ topoconvert gps-grid survey_grid.kml --bounds 500000 4000000 502000 4002000 --sp
 
 Convert between formats while preserving attributes:
 ```bash
-topoconvert kml-to-csv input.kml output.csv --include-attributes
+topoconvert kml-to-points input.kml output.csv --format csv
 topoconvert csv-to-kml input.csv output.kml --add-labels
 ```
 

@@ -12,14 +12,13 @@ The foundational architecture and core conversion capabilities have been impleme
 
 ### Features Completed:
 - [x] **CLI Architecture** - Single entry point with subcommands using Click framework
-- [x] **Core Commands** - All 10 major conversion commands implemented:
+- [x] **Core Commands** - All 9 major conversion commands implemented:
   - `kml-to-dxf-contours` - Generate contour lines from KML points
   - `kml-to-dxf-mesh` - Create triangulated mesh from KML points  
   - `kml-to-points` - Extract points to various formats (DXF, CSV, JSON, TXT)
   - `csv-to-kml` - Convert CSV coordinates to KML format
   - `multi-csv-to-dxf` - Merge multiple CSV files into single DXF
   - `multi-csv-to-kml` - Combine multiple CSV files into KML
-  - `kml-to-csv` - Convert KML points to CSV format
   - `slope-heatmap` - Generate slope visualization from KML data
   - `kml-contours-to-dxf` - Convert KML contour lines to DXF
   - `gps-grid` - Generate GPS survey grids
@@ -64,7 +63,6 @@ Focus on code quality, comprehensive testing, and production readiness.
   - [x] Comprehensive tests for slope_heatmap command (test_slope_heatmap.py) - 62%/26% coverage
   - [x] Comprehensive tests for gps_grid command (test_gps_grid.py) - 100%/83% coverage
   - [x] Comprehensive tests for kml_contours_to_dxf command (test_kml_contours_to_dxf.py) - 92%/76% coverage
-  - [x] Comprehensive tests for kml_to_csv command (test_kml_to_csv_minimal.py) - 100% coverage (stub implementation)
   - [x] Overall test coverage increased from ~20% to ~85%+
   - [x] Most commands achieve >85% coverage
   - [x] **Slope Heatmap Refactoring** ✅ **COMPLETED**
@@ -234,7 +232,7 @@ Enterprise-grade features and third-party tool integration.
 - [x] Example data and notebooks created
 - [x] **MAJOR ACHIEVEMENT**: Comprehensive test coverage for ALL commands ✅
   - Basic test suite expanded from ~20% to ~85% overall coverage
-  - All 10 commands now have comprehensive tests with real implementations
+  - All 9 commands now have comprehensive tests with real implementations
   - Over 329 total tests across the entire codebase
   - Most commands achieve >85% coverage
   - Enhanced multi_csv_to_dxf with optional elevation support
@@ -270,7 +268,6 @@ Enterprise-grade features and third-party tool integration.
 | slope_heatmap | 65% | 63% | test_slope_heatmap.py |
 | gps_grid | 100% | 85% | test_gps_grid.py |
 | kml_contours_to_dxf | 92% | 76% | test_kml_contours_to_dxf.py |
-| kml_to_csv | 100% | N/A | test_kml_to_csv_minimal.py |
 | core/utils | - | 95% | test_core_utils.py |
 | **Overall** | **~85%** | - | **329 tests total** |
 

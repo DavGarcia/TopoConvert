@@ -2,7 +2,6 @@
 
 Adapted from GPSGrid combined_dxf.py
 """
-import os
 from pathlib import Path
 from typing import List, Optional, Callable
 

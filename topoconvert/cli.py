@@ -26,7 +26,6 @@ from topoconvert.commands import (
     kml_to_mesh,
     multi_csv_to_dxf,
     multi_csv_to_kml,
-    kml_to_csv,
     slope_heatmap,
     kml_contours_to_dxf,
     gps_grid
@@ -39,7 +38,6 @@ kml_to_points.register(cli)
 kml_to_mesh.register(cli)
 multi_csv_to_dxf.register(cli)
 multi_csv_to_kml.register(cli)
-kml_to_csv.register(cli)
 slope_heatmap.register(cli)
 kml_contours_to_dxf.register(cli)
 gps_grid.register(cli)

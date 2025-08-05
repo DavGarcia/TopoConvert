@@ -92,7 +92,6 @@ These commands support both projected and geographic output:
 These commands preserve original coordinates:
 
 - `csv-to-kml` - Assumes input is already in WGS84
-- `kml-to-csv` - Exports coordinates as found
 - `multi-csv-to-kml` - Combines without transformation
 
 ## Choosing the Right Projection
