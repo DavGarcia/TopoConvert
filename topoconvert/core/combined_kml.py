@@ -7,6 +7,7 @@ from xml.etree import ElementTree as ET
 from xml.dom import minidom
 
 from topoconvert.core.exceptions import ProcessingError, TopoConvertError
+from topoconvert.core.utils import validate_file_path, ensure_file_extension
 
 
 # Color palette for different datasets (AABBGGRR format)
@@ -65,6 +66,15 @@ def merge_csv_to_kml(
     """
     if not csv_files:
         raise ProcessingError("No CSV files provided")
+    
+    # Validate all input files exist before processing
+    validated_files = []
+    for csv_file in csv_files:
+        validated_files.append(validate_file_path(csv_file, must_exist=True))
+    csv_files = validated_files
+    
+    # Ensure output file has correct extension
+    output_file = ensure_file_extension(output_file, '.kml')
     
     # Create KML root elements
     kml = ET.Element('kml', xmlns='http://www.opengis.net/kml/2.2')
