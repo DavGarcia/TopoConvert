@@ -1,7 +1,6 @@
 """TopoConvert CLI entry point."""
 import click
 import sys
-from typing import Optional
 
 from topoconvert import __version__
 

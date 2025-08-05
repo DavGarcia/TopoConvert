@@ -13,7 +13,6 @@ matplotlib.use('Agg')  # For headless environments
 import matplotlib.pyplot as plt
 import ezdxf
 from ezdxf.enums import TextEntityAlignment
-from pyproj import Transformer
 from scipy.interpolate import griddata
 
 from topoconvert.core.exceptions import (

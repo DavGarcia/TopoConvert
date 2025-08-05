@@ -7,7 +7,7 @@ name = "topoconvert"
 version = "0.1.0"
 description = "A unified geospatial conversion toolkit for survey data"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "TopoConvert Contributors"},
 ]
@@ -51,6 +51,16 @@ dev = [
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
 ]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "myst-parser>=0.18.0",
+]
+tools = [
+    "ipython>=8.0.0",
+    "jupyter>=1.0.0",
+    "notebook>=6.5.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/yourusername/topoconvert"
@@ -62,7 +72,7 @@ Repository = "https://github.com/yourusername/topoconvert"
 topoconvert = "topoconvert.cli:main"
 
 [tool.setuptools]
-packages = ["topoconvert", "topoconvert.commands", "topoconvert.utils"]
+packages = ["topoconvert", "topoconvert.commands", "topoconvert.core", "topoconvert.utils"]
 
 [tool.black]
 line-length = 88

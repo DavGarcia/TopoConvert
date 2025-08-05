@@ -2,7 +2,6 @@
 
 Adapted from GPSGrid kml_to_slope_heatmap.py
 """
-import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Tuple, Optional
@@ -11,7 +10,6 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from matplotlib.patches import Polygon as MplPolygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyproj import Transformer
 from scipy.interpolate import griddata

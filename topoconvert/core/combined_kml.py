@@ -1,11 +1,11 @@
 """Merge multiple CSV files into a single KML with folders."""
 import pandas as pd
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from xml.etree import ElementTree as ET
 from xml.dom import minidom
 
-from topoconvert.core.exceptions import ProcessingError, TopoConvertError
+from topoconvert.core.exceptions import ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.core.result_types import CombinedKMLResult
 

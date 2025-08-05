@@ -1,6 +1,6 @@
 """Common utility functions for TopoConvert."""
 from pathlib import Path
-from typing import Union, Callable, Optional
+from typing import Union
 import numpy as np
 
 

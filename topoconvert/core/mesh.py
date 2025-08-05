@@ -8,7 +8,6 @@ from typing import List, Tuple, Optional
 
 import ezdxf
 import numpy as np
-from pyproj import Transformer
 from scipy.spatial import Delaunay
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError

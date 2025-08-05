@@ -55,6 +55,9 @@ topoconvert kml-to-dxf-contours input.kml --interval 1.0
 # Convert CSV to KML
 topoconvert csv-to-kml survey_data.csv output.kml --add-labels
 
+# Convert KML to CSV format
+topoconvert kml-to-points input.kml output.csv --format csv
+
 # Generate slope heatmap (output file optional, contours shown by default)
 topoconvert slope-heatmap terrain.kml --target-slope 5.0
 
@@ -69,7 +72,6 @@ topoconvert multi-csv-to-kml file1.csv file2.csv file3.csv output.kml
 
 ### Data Conversion
 - `csv-to-kml` - Convert CSV survey data to KML format
-- `kml-to-csv` - Convert KML data to CSV format
 - `kml-to-points` - Extract points from KML (supports DXF, CSV, JSON, TXT output)
 
 ### DXF Generation

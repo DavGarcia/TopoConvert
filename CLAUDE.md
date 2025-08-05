@@ -4,25 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TopoConvert is a planned Python-based CLI tool for converting and processing geospatial survey data between formats (KML, CSV, DXF) with specialized topographical operations. The project is currently in the architectural planning phase with no implementation yet.
+TopoConvert is a fully implemented Python-based CLI tool for converting and processing geospatial survey data between formats (KML, CSV, DXF) with specialized topographical operations. The project is production-ready with comprehensive tests and documentation.
 
 ## Development Commands
 
-Since the project hasn't been implemented yet, here are the standard commands that will be used once the Python package is set up:
-
 ```bash
-# Install package in development mode (once pyproject.toml exists)
+# Install package in development mode
 pip install -e .
 
 # Run the CLI tool
 topoconvert <subcommand> [options]
 
-# Run tests (once implemented)
+# Run tests
 pytest
 pytest tests/test_specific_module.py  # Run single test file
 pytest -k "test_name"                  # Run specific test
+pytest --cov=topoconvert              # Run with coverage
 
-# Code quality checks (once configured)
+# Code quality checks
 black topoconvert/                     # Format code
 flake8 topoconvert/                   # Lint code
 mypy topoconvert/                     # Type checking
@@ -32,59 +31,94 @@ mypy topoconvert/                     # Type checking
 
 ### CLI Structure
 - **Single entry point**: `topoconvert` command with multiple subcommands
-- **Commands**: Each conversion type is a separate subcommand in `topoconvert/commands/`
-- **CLI framework**: Will use `argparse` or `click` for command parsing
+- **Commands**: Each conversion type is implemented as a separate subcommand in `topoconvert/commands/`
+- **CLI framework**: Uses `click` for command parsing and argument handling
+- **Core modules**: Business logic separated in `topoconvert/core/` for testability and reusability
 
-### Conversion Commands
-- `kml-to-contours`: KML points → DXF contours
-- `csv-to-kml`: CSV data → KML format
-- `kml-to-points`: Extract points from KML
-- `kml-to-mesh`: Generate mesh from KML
-- `combined-dxf`: Merge multiple DXF files
-- `kml-to-csv`: KML → CSV format
-- `slope-heatmap`: Generate slope visualizations
-- `kml-contours-to-dxf`: KML contours → DXF
-- `gps-grid`: Generate GPS grid layouts
+### Available Commands
+- `csv-to-kml`: Convert CSV survey data to KML format
+- `gps-grid`: Generate GPS grid points within property boundaries
+- `kml-contours-to-dxf`: Convert KML contour LineStrings to DXF format
+- `kml-to-dxf-contours`: Convert KML points to DXF contours
+- `kml-to-dxf-mesh`: Generate 3D TIN mesh from KML points
+- `kml-to-points`: Extract point data from KML files (supports DXF, CSV, JSON, TXT output)
+- `multi-csv-to-dxf`: Merge CSV files to DXF with separate layers
+- `multi-csv-to-kml`: Merge CSV files to KML with separate folders
+- `slope-heatmap`: Generate slope heatmap from elevation data
 
 ### Key Dependencies
-- **Geospatial**: `shapely`, `pyproj`
-- **Data Processing**: `pandas`, `numpy`, `scipy`
-- **File Formats**: `ezdxf` (DXF handling)
-- **Visualization**: `matplotlib`
-- **Advanced Geometry**: `alphashape`, `concave_hull`
+- **CLI Framework**: `click` for command-line interface
+- **Geospatial**: `shapely`, `pyproj` for geometry and projections
+- **Data Processing**: `pandas`, `numpy`, `scipy` for data manipulation
+- **File Formats**: `ezdxf` for DXF file handling
+- **Visualization**: `matplotlib` for slope heatmaps
+- **Advanced Geometry**: `alphashape`, `concave_hull` for boundary analysis
 
 ### Code Organization
-- `topoconvert/cli.py`: Main CLI entry point and subcommand registration
-- `topoconvert/commands/`: Individual conversion modules, each exposing a `register(subparsers)` function
-- `topoconvert/utils/`: Shared utilities for file I/O, geometry operations, and projections
+- `topoconvert/cli.py`: Main CLI entry point with Click-based command registration
+- `topoconvert/commands/`: Individual command implementations using Click decorators
+- `topoconvert/core/`: Core business logic modules with structured result types
+- `topoconvert/utils/`: Shared utilities for projections and common operations
+- `tests/`: Comprehensive test suite with 350+ tests covering all functionality
 
 ## Implementation Guidelines
 
 When implementing features:
 
-1. **Command Module Pattern**: Each command should follow this structure:
+1. **Click Command Pattern**: Each command uses Click decorators:
    ```python
-   def register(subparsers):
-       parser = subparsers.add_parser('command-name', help='Description')
-       parser.add_argument('input', help='Input file')
-       parser.add_argument('output', help='Output file')
-       parser.set_defaults(func=execute)
+   import click
+   from topoconvert.core.module_name import core_function
    
-   def execute(args):
-       # Implementation here
-       pass
+   @click.command()
+   @click.argument('input_file', type=click.Path(exists=True))
+   @click.argument('output_file', type=click.Path(), required=False)
+   @click.option('--option-name', default=value, help='Description')
+   def command_name(input_file, output_file, option_name):
+       \"\"\"Command description.\"\"\"
+       try:
+           result = core_function(input_file, output_file, option_name=option_name)
+           click.echo(f"Success: {result.success}")
+       except Exception as e:
+           click.echo(f"Error: {e}", err=True)
+           raise click.Abort()
    ```
 
-2. **Coordinate Systems**: Always handle projection transformations explicitly using `pyproj`
+2. **Result Types**: All core functions return structured result objects for consistency:
+   ```python
+   @dataclass
+   class ProcessingResult:
+       success: bool
+       output_file: str
+       details: dict = field(default_factory=dict)
+   ```
 
-3. **Error Handling**: Provide clear error messages for common issues (invalid file formats, projection mismatches, etc.)
+3. **Coordinate Systems**: Handle projection transformations using the utilities in `topoconvert.utils.projection`
 
-4. **Testing**: Write tests for each conversion command with sample data in `examples/data/`
+4. **Error Handling**: Use custom exceptions from `topoconvert.core.exceptions` with clear messages
 
-## Next Steps for Implementation
+5. **Testing**: Write comprehensive tests using pytest with fixtures in `tests/` directory
 
-1. Create `pyproject.toml` with project metadata and dependencies
-2. Implement `topoconvert/cli.py` with basic command structure
-3. Create `topoconvert/commands/` directory and implement first conversion command
-4. Set up pytest infrastructure in `tests/`
-5. Add sample data files in `examples/data/`
+## Project Status
+
+✅ **Fully Implemented Features:**
+- All CLI commands functional and tested
+- Core modules with proper separation of concerns
+- Comprehensive test suite (350+ tests)
+- Package building and distribution ready
+- Documentation and usage examples
+- Result type system for structured outputs
+- Custom exception handling
+- Coordinate projection utilities
+
+## Virtual Environment Usage
+
+This project uses `venv` for Python environment management. When running Python commands, use:
+
+```bash
+# Activate virtual environment
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Use venv Python for all commands
+venv/bin/python -m pytest  # Instead of just: pytest
+```
