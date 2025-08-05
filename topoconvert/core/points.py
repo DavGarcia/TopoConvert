@@ -5,11 +5,9 @@ Adapted from GPSGrid kml_to_points_dxf.py and kml_points_to_csv.py
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional
 
-import click
 import ezdxf
-from pyproj import Transformer
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
@@ -32,8 +30,7 @@ def extract_points(
     layer_name: str = 'GPS_POINTS',
     point_color: int = 7,
     target_epsg: Optional[int] = None,
-    wgs84: bool = False,
-    progress_callback: Optional[Callable] = None
+    wgs84: bool = False
 ) -> PointExtractionResult:
     """Extract points from KML and save in specified format.
     
@@ -48,7 +45,6 @@ def extract_points(
         point_color: AutoCAD color index for DXF points
         target_epsg: Target EPSG code for projection (DXF only)
         wgs84: Keep coordinates in WGS84 (DXF only)
-        progress_callback: Optional callback for progress updates
     
     Raises:
         FileNotFoundError: If input file doesn't exist
@@ -75,7 +71,7 @@ def extract_points(
     output_file = ensure_file_extension(output_file, extensions[output_format])
     
     try:
-        _process_points_extraction(
+        return _process_points_extraction(
             input_file=input_file,
             output_file=output_file,
             output_format=output_format,
@@ -85,8 +81,7 @@ def extract_points(
             layer_name=layer_name,
             point_color=point_color,
             target_epsg=target_epsg,
-            wgs84=wgs84,
-            progress_callback=progress_callback
+            wgs84=wgs84
         )
     except Exception as e:
         raise ProcessingError(f"Point extraction failed: {str(e)}") from e
@@ -219,14 +214,9 @@ def _process_points_extraction(
     layer_name: str,
     point_color: int,
     target_epsg: Optional[int],
-    wgs84: bool,
-    progress_callback: Optional[Callable]
-) -> None:
+    wgs84: bool
+) -> PointExtractionResult:
     """Process point extraction - internal implementation."""
-    
-    # Initialize progress
-    if progress_callback:
-        progress_callback("Extracting points from KML", 0)
     
     # Extract points from KML
     kml_points = _extract_kml_points(input_file)
@@ -234,16 +224,10 @@ def _process_points_extraction(
     if not kml_points:
         raise ProcessingError(f"No points found in {input_file}")
     
-    click.echo(f"Found {len(kml_points)} points in KML")
-    
-    if progress_callback:
-        progress_callback("Processing coordinates", 20)
+    # Found {len(kml_points)} points in KML
     
     # For CSV, JSON, and TXT formats, we can output directly without projection
     if output_format in ['csv', 'json', 'txt']:
-        if progress_callback:
-            progress_callback(f"Writing {output_format.upper()} file", 80)
-        
         if output_format == 'csv':
             _write_csv_points(kml_points, output_file, elevation_units)
         elif output_format == 'json':
@@ -251,18 +235,20 @@ def _process_points_extraction(
         elif output_format == 'txt':
             _write_txt_points(kml_points, output_file, elevation_units)
         
-        click.echo(f"\nCreated {output_format.upper()} file: {output_file}")
-        click.echo(f"- {len(kml_points)} points")
-        click.echo(f"- Elevation units: {elevation_units}")
-        
-        if progress_callback:
-            progress_callback("Complete", 100)
-        return
+        # Return result for CSV, JSON, TXT formats
+        return PointExtractionResult(
+            success=True,
+            output_file=str(output_file),
+            point_count=len(kml_points),
+            format=output_format.upper(),
+            elevation_units=elevation_units,
+            coordinate_system="WGS84 (Lat/Lon)",
+            details={
+                "kml_points_found": len(kml_points)
+            }
+        )
     
     # For DXF format, we need to project coordinates
-    if progress_callback:
-        progress_callback("Projecting coordinates", 40)
-    
     # Determine target CRS
     if kml_points:
         sample_point = (kml_points[0][0], kml_points[0][1])
@@ -304,9 +290,6 @@ def _process_points_extraction(
         y_vals_ft.append(y_ft)
         z_vals_ft.append(z_ft)
     
-    if progress_callback:
-        progress_callback("Applying coordinate transformation", 60)
-    
     # Determine reference point for translation
     if not translate_to_origin:
         ref_x, ref_y, ref_z = 0.0, 0.0, 0.0
@@ -330,49 +313,49 @@ def _process_points_extraction(
     
     points_3d = list(zip(x_local, y_local, z_local))
     
-    if progress_callback:
-        progress_callback("Writing DXF file", 80)
-    
     # Write DXF
     _write_dxf_points(points_3d, output_file, layer_name, point_color)
     
-    # Print summary
-    click.echo(f"\nCreated 3D points DXF: {output_file}")
-    click.echo(f"- {len(points_3d)} points")
-    click.echo(f"- Layer: {layer_name}")
-    
-    if translate_to_origin:
-        if use_reference_point:
-            if wgs84:
-                click.echo(f"- Reference point (excluded): ({ref_x:.6f}, {ref_y:.6f}, {ref_z:.2f})")
-            else:
-                click.echo(f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
-            click.echo(f"- First point translated to origin")
-        else:
-            if wgs84:
-                click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f}, {ref_z:.2f})")
-            else:
-                click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
-    
-    # Output coordinate system info
+    # Determine coordinate system string
     if wgs84:
-        click.echo("- Coordinates in degrees (WGS84)")
+        coord_system = "degrees (WGS84)"
     elif target_epsg:
-        click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
+        coord_system = f"feet (EPSG:{target_epsg})"
     else:
-        click.echo("- Coordinates in feet (auto-detected UTM zone)")
+        coord_system = "feet (auto-detected UTM zone)"
     
-    # Print coordinate ranges
+    # Build coordinate ranges
+    coord_ranges = None
     if x_local and y_local and z_local:
-        if wgs84:
-            click.echo(f"- X range: {min(x_local):.6f} to {max(x_local):.6f} degrees")
-            click.echo(f"- Y range: {min(y_local):.6f} to {max(y_local):.6f} degrees")
-            z_unit = "m" if elevation_units == "meters" else "ft"
-            click.echo(f"- Z range: {min(z_local):.1f} to {max(z_local):.1f} {z_unit}")
-        else:
-            click.echo(f"- X range: {min(x_local):.1f} to {max(x_local):.1f} ft")
-            click.echo(f"- Y range: {min(y_local):.1f} to {max(y_local):.1f} ft")
-            click.echo(f"- Z range: {min(z_local):.1f} to {max(z_local):.1f} ft")
+        coord_ranges = {
+            'x': (min(x_local), max(x_local)),
+            'y': (min(y_local), max(y_local)),
+            'z': (min(z_local), max(z_local)),
+            'units': 'degrees' if wgs84 else 'ft'
+        }
     
-    if progress_callback:
-        progress_callback("Complete", 100)
+    # Build reference point if translated
+    reference_point = None
+    if translate_to_origin:
+        reference_point = (ref_x, ref_y, ref_z)
+    
+    # Return result for DXF format
+    return PointExtractionResult(
+        success=True,
+        output_file=str(output_file),
+        point_count=len(points_3d),
+        format="DXF",
+        elevation_units=elevation_units,
+        coordinate_system=coord_system,
+        coordinate_ranges=coord_ranges,
+        reference_point=reference_point,
+        translated_to_origin=translate_to_origin,
+        details={
+            "kml_points_found": len(kml_points),
+            "layer_name": layer_name,
+            "point_color": point_color,
+            "use_reference_point": use_reference_point,
+            "wgs84": wgs84,
+            "target_epsg": target_epsg
+        }
+    )

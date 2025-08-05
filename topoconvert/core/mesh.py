@@ -4,7 +4,7 @@ Adapted from GPSGrid kml_to_mesh_dxf.py
 """
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional
 
 import ezdxf
 import numpy as np
@@ -33,8 +33,7 @@ def generate_mesh(
     add_wireframe: bool = False,
     wireframe_color: int = 7,
     target_epsg: Optional[int] = None,
-    wgs84: bool = False,
-    progress_callback: Optional[Callable] = None
+    wgs84: bool = False
 ) -> MeshGenerationResult:
     """Generate 3D TIN mesh from KML point data.
     
@@ -50,7 +49,6 @@ def generate_mesh(
         wireframe_color: AutoCAD color index for wireframe
         target_epsg: Target EPSG code for projection (default: auto-detect UTM)
         wgs84: Keep coordinates in WGS84 (no projection)
-        progress_callback: Optional callback for progress updates
     
     Raises:
         FileNotFoundError: If input file doesn't exist
@@ -81,8 +79,7 @@ def generate_mesh(
             add_wireframe=add_wireframe,
             wireframe_color=wireframe_color,
             target_epsg=target_epsg,
-            wgs84=wgs84,
-            progress_callback=progress_callback
+            wgs84=wgs84
         )
     except Exception as e:
         raise ProcessingError(f"Mesh generation failed: {str(e)}") from e
@@ -124,12 +121,8 @@ def _extract_kml_points(kml_path: Path) -> List[Tuple[float, float, float]]:
 
 def _create_mesh_dxf(points_3d: List[Tuple[float, float, float]], 
                     output_file: Path, layer_name: str, mesh_color: int,
-                    add_wireframe: bool, wireframe_color: int,
-                    progress_callback: Optional[Callable]) -> Tuple[int, int]:
+                    add_wireframe: bool, wireframe_color: int) -> Tuple[int, int]:
     """Create DXF file with 3D mesh"""
-    
-    if progress_callback:
-        progress_callback("Creating triangulation", 60)
     
     # Create Delaunay triangulation (only X,Y coordinates for 2D triangulation)
     points_2d = np.array([(x, y) for x, y, z in points_3d])
@@ -145,9 +138,6 @@ def _create_mesh_dxf(points_3d: List[Tuple[float, float, float]],
     
     # Store for result reporting
     triangle_count = len(tri.simplices)
-    
-    if progress_callback:
-        progress_callback("Writing DXF file", 80)
     
     # Create DXF
     doc = ezdxf.new('R2010')
@@ -232,14 +222,9 @@ def _process_mesh_generation(
     add_wireframe: bool,
     wireframe_color: int,
     target_epsg: Optional[int],
-    wgs84: bool,
-    progress_callback: Optional[Callable]
+    wgs84: bool
 ) -> MeshGenerationResult:
     """Process mesh generation - internal implementation."""
-    
-    # Initialize progress
-    if progress_callback:
-        progress_callback("Extracting points from KML", 0)
     
     # Extract points from KML
     kml_points = _extract_kml_points(input_file)
@@ -252,9 +237,6 @@ def _process_mesh_generation(
     
     # Store for result reporting
     point_count = len(kml_points)
-    
-    if progress_callback:
-        progress_callback("Projecting coordinates", 20)
     
     # Determine target CRS
     if kml_points:
@@ -294,9 +276,6 @@ def _process_mesh_generation(
         y_vals_ft.append(y_ft)
         z_vals_ft.append(z_ft)
     
-    if progress_callback:
-        progress_callback("Applying coordinate transformation", 40)
-    
     # Determine reference point for translation
     if not translate_to_origin:
         ref_x, ref_y, ref_z = 0.0, 0.0, 0.0
@@ -329,7 +308,7 @@ def _process_mesh_generation(
     # Create mesh DXF
     face_count, edge_count = _create_mesh_dxf(
         points_3d, output_file, layer_name, mesh_color,
-        add_wireframe, wireframe_color, progress_callback
+        add_wireframe, wireframe_color
     )
     
     # Build coordinate system description
@@ -360,9 +339,6 @@ def _process_mesh_generation(
             "z": (min(z_local), max(z_local)),
             "units": "feet" if not wgs84 else "degrees"
         }
-    
-    if progress_callback:
-        progress_callback("Complete", 100)
     
     # Return structured result
     return MeshGenerationResult(

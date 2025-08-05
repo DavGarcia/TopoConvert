@@ -1,7 +1,7 @@
 """Merge multiple CSV files into a single KML with folders."""
 import pandas as pd
 from pathlib import Path
-from typing import List, Optional, Callable
+from typing import List, Optional
 from xml.etree import ElementTree as ET
 from xml.dom import minidom
 
@@ -47,8 +47,7 @@ def merge_csv_to_kml(
     add_labels: bool = True,
     x_column: str = 'Longitude',
     y_column: str = 'Latitude', 
-    z_column: str = 'Elevation',
-    progress_callback: Optional[Callable] = None
+    z_column: str = 'Elevation'
 ) -> CombinedKMLResult:
     """
     Merge multiple CSV files into a single KML with separate folders.
@@ -62,7 +61,6 @@ def merge_csv_to_kml(
         x_column: Column name for X coordinate
         y_column: Column name for Y coordinate
         z_column: Column name for Z coordinate
-        progress_callback: Optional progress callback
     """
     if not csv_files:
         raise ProcessingError("No CSV files provided")
@@ -117,10 +115,6 @@ def merge_csv_to_kml(
     elevations_converted = elevation_units == 'feet'
     
     for idx, csv_file in enumerate(csv_files):
-        if progress_callback:
-            progress = int((idx / len(csv_files)) * 90)
-            progress_callback(f"Processing {csv_file.name}", progress)
-        
         try:
             # Read CSV
             df = pd.read_csv(csv_file)
@@ -190,9 +184,6 @@ def merge_csv_to_kml(
         except Exception as e:
             raise ProcessingError(f"Error processing {csv_file.name}: {e}")
     
-    if progress_callback:
-        progress_callback("Writing KML file", 95)
-    
     # Pretty print the KML
     kml_str = ET.tostring(kml, encoding='unicode')
     dom = minidom.parseString(kml_str)
@@ -208,9 +199,6 @@ def merge_csv_to_kml(
             f.write(pretty_kml)
     except Exception as e:
         raise ProcessingError(f"Failed to write KML file: {e}")
-    
-    if progress_callback:
-        progress_callback("Complete", 100)
     
     # Return structured result
     return CombinedKMLResult(

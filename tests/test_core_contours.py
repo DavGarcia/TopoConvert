@@ -83,34 +83,6 @@ def test_generate_contours_with_sample_data(grid_kml, temp_dir):
         assert 'ENTITIES' in content
 
 
-def test_generate_contours_progress_callback(grid_kml):
-    """Test that progress callback is called during processing."""
-    from topoconvert.core.contours import generate_contours
-    
-    progress_calls = []
-    
-    def progress_callback(message, percent):
-        progress_calls.append((message, percent))
-    
-    with tempfile.TemporaryDirectory() as temp_dir:
-        output_file = Path(temp_dir) / "output.dxf"
-        
-        generate_contours(
-            input_file=grid_kml,
-            output_file=output_file,
-            progress_callback=progress_callback
-        )
-        
-        # Verify progress was reported
-        assert len(progress_calls) > 0
-        # Check that progress includes key stages
-        messages = [call[0] for call in progress_calls]
-        assert any('Extracting' in msg or 'Reading' in msg for msg in messages)
-        assert any('Interpolating' in msg or 'Generating' in msg or 'Creating' in msg for msg in messages)
-        # Check that progress went from 0 to 100
-        percentages = [call[1] for call in progress_calls]
-        assert 0 in percentages
-        assert 100 in percentages
 
 
 def test_generate_contours_error_handling(empty_kml):

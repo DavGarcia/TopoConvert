@@ -68,8 +68,7 @@ def register(cli):
                 smooth=smooth,
                 show_contours=not no_contours,  # Invert flag since contours are default
                 contour_interval=contour_interval,
-                target_slope=target_slope,
-                progress_callback=None
+                target_slope=target_slope
             )
                 
         except TopoConvertError as e:

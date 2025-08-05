@@ -5,7 +5,7 @@ Adapted from GPSGrid flexible_gps_grid.py
 import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional
 
 import click
 import numpy as np
@@ -13,7 +13,6 @@ import pandas as pd
 from shapely.geometry import Polygon, Point
 from scipy.spatial import ConvexHull
 import alphashape
-import concave_hull
 
 from topoconvert.core.exceptions import ProcessingError, FileFormatError
 
@@ -31,8 +30,7 @@ def generate_gps_grid(
     alpha: float = 0.1,
     point_style: str = 'circle',
     point_color: str = 'ff00ff00',
-    grid_name: str = 'GPS Grid',
-    progress_callback: Optional[Callable] = None
+    grid_name: str = 'GPS Grid'
 ) -> None:
     """
     Generate GPS grid points within property boundaries.
@@ -48,7 +46,6 @@ def generate_gps_grid(
         point_style: Point style in output KML
         point_color: Point color in AABBGGRR format
         grid_name: Name for the grid in output KML
-        progress_callback: Optional progress callback
     """
     # Validate input
     input_file = Path(input_file)
@@ -74,9 +71,6 @@ def generate_gps_grid(
         else:
             raise FileFormatError(f"Cannot auto-detect input type for {input_file.suffix}")
     
-    if progress_callback:
-        progress_callback("Loading input data", 10)
-    
     # Load boundary based on input type
     if input_type == 'kml-polygon':
         boundary_coords = _extract_polygon_from_kml(input_file)
@@ -92,17 +86,11 @@ def generate_gps_grid(
     if len(boundary_coords) < 3:
         raise ProcessingError("Need at least 3 points to create a boundary")
     
-    if progress_callback:
-        progress_callback("Creating grid points", 40)
-    
     # Generate grid points
     grid_points = _generate_grid_within_polygon(boundary_coords, spacing)
     
     if not grid_points:
         raise ProcessingError("No grid points generated within boundary")
-    
-    if progress_callback:
-        progress_callback("Writing KML output", 80)
     
     # Write output KML
     _write_grid_kml(output_file, grid_points, boundary_coords, grid_name, 
@@ -115,9 +103,6 @@ def generate_gps_grid(
     click.echo(f"- Boundary type: {input_type}")
     if input_type == 'csv-extent' and buffer > 0:
         click.echo(f"- Buffer: {buffer} ft")
-    
-    if progress_callback:
-        progress_callback("Complete", 100)
 
 
 def _parse_coordinates_kml(coord_text: str) -> List[Tuple[float, float]]:

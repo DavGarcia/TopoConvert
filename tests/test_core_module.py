@@ -37,7 +37,6 @@ def test_core_utils_module():
         assert hasattr(utils, 'validate_file_path')
         assert hasattr(utils, 'ensure_file_extension')
         assert hasattr(utils, 'convert_elevation_units')
-        assert hasattr(utils, 'create_progress_callback')
     except ImportError as e:
         pytest.fail(f"Failed to import core utils: {e}")
 

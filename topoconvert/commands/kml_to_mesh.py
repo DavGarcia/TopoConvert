@@ -61,8 +61,7 @@ def register(cli):
                 add_wireframe=not no_wireframe,  # Invert the flag since wireframe is now default
                 wireframe_color=wireframe_color,
                 target_epsg=target_epsg,
-                wgs84=False,  # Mesh generation requires projected coordinates
-                progress_callback=None
+                wgs84=False  # Mesh generation requires projected coordinates
             )
             
             # Display results

@@ -54,8 +54,7 @@ def register(cli):
                 label_height=label_height,
                 translate_to_origin=not no_translate,
                 target_epsg=target_epsg,
-                wgs84=False,  # Contour generation requires projected coordinates
-                progress_callback=None
+                wgs84=False  # Contour generation requires projected coordinates
             )
                 
         except TopoConvertError as e:

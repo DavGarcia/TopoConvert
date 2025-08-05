@@ -5,7 +5,7 @@ Adapted from GPSGrid kml_points_to_contours_dxf.py
 import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional
 
 import click
 import numpy as np
@@ -38,8 +38,7 @@ def generate_contours(
     label_height: float = 2.0,
     translate_to_origin: bool = True,
     target_epsg: Optional[int] = None,
-    wgs84: bool = False,
-    progress_callback: Optional[Callable] = None
+    wgs84: bool = False
 ) -> None:
     """Generate contour lines from KML point data.
     
@@ -54,7 +53,6 @@ def generate_contours(
         translate_to_origin: Whether to translate coordinates to origin
         target_epsg: Target EPSG code for projection (default: auto-detect UTM)
         wgs84: Keep coordinates in WGS84 (no projection)
-        progress_callback: Optional callback for progress updates
     
     Raises:
         FileNotFoundError: If input file doesn't exist
@@ -90,8 +88,7 @@ def generate_contours(
             label_height=label_height,
             translate_to_origin=translate_to_origin,
             target_epsg=target_epsg,
-            wgs84=wgs84,
-            progress_callback=progress_callback
+            wgs84=wgs84
         )
     except Exception as e:
         raise ProcessingError(f"Contour generation failed: {str(e)}") from e
@@ -167,14 +164,9 @@ def _process_contours(
     label_height: float,
     translate_to_origin: bool,
     target_epsg: Optional[int],
-    wgs84: bool,
-    progress_callback: Optional[Callable]
+    wgs84: bool
 ) -> None:
     """Process contours - internal implementation."""
-    
-    # Initialize progress
-    if progress_callback:
-        progress_callback("Extracting points from KML", 0)
     
     # Extract points from KML
     kml_points = _extract_points(input_file)
@@ -186,9 +178,6 @@ def _process_contours(
         raise ProcessingError(f"Need at least 2 points for contour generation, found {len(kml_points)}")
     
     click.echo(f"Found {len(kml_points)} points in KML")
-    
-    if progress_callback:
-        progress_callback("Projecting coordinates", 20)
     
     # Determine target CRS
     if kml_points:
@@ -228,9 +217,6 @@ def _process_contours(
         y_vals_ft.append(y_ft)
         z_vals_ft.append(z_ft)
     
-    if progress_callback:
-        progress_callback("Translating coordinates", 30)
-    
     # Determine reference point for translation
     if not translate_to_origin:
         ref_x, ref_y, ref_z = 0.0, 0.0, 0.0
@@ -245,9 +231,6 @@ def _process_contours(
     y_local = [y - ref_y for y in y_vals_ft]
     z_local = [z - ref_z for z in z_vals_ft]
     
-    if progress_callback:
-        progress_callback("Creating interpolation grid", 40)
-    
     # Create interpolation grid
     x_min, x_max = min(x_local), max(x_local)
     y_min, y_max = min(y_local), max(y_local)
@@ -255,9 +238,6 @@ def _process_contours(
     xi = np.linspace(x_min, x_max, grid_resolution)
     yi = np.linspace(y_min, y_max, grid_resolution)
     Xg, Yg = np.meshgrid(xi, yi)
-    
-    if progress_callback:
-        progress_callback("Interpolating elevation data", 50)
     
     # Interpolate elevation data
     points = list(zip(x_local, y_local))
@@ -274,9 +254,6 @@ def _process_contours(
     
     click.echo(f"Generating contours from {contour_start:.1f} to {contour_end:.1f} ft at {contour_interval} ft intervals")
     
-    if progress_callback:
-        progress_callback("Generating contours", 60)
-    
     # Create contours
     cs = plt.contour(Xg, Yg, Zg, levels=contour_levels, colors='black')
     
@@ -285,9 +262,6 @@ def _process_contours(
     dy = (y_max - y_min) / (grid_resolution - 1)
     grid_diag = math.hypot(dx, dy)
     max_gap = 2.0 * grid_diag
-    
-    if progress_callback:
-        progress_callback("Creating DXF file", 70)
     
     # Create DXF
     doc = ezdxf.new('R2010')
@@ -302,9 +276,6 @@ def _process_contours(
             doc.header["$INSUNITS"] = 2  # Feet
     except Exception:
         doc.header["$INSUNITS"] = 2
-    
-    if progress_callback:
-        progress_callback("Writing contour lines", 80)
     
     # Extract and write contour lines
     contour_count = 0
@@ -360,9 +331,6 @@ def _process_contours(
                         align=TextEntityAlignment.MIDDLE_CENTER
                     )
     
-    if progress_callback:
-        progress_callback("Saving DXF file", 95)
-    
     # Save DXF
     doc.saveas(str(output_file))
     
@@ -380,6 +348,3 @@ def _process_contours(
         click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
     else:
         click.echo("- Coordinates in feet (auto-detected UTM zone)")
-    
-    if progress_callback:
-        progress_callback("Complete", 100)

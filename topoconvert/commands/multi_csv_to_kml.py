@@ -48,8 +48,7 @@ def register(cli):
                 add_labels=add_labels,
                 x_column=x_column,
                 y_column=y_column,
-                z_column=z_column,
-                progress_callback=None
+                z_column=z_column
             )
             
             # Display results

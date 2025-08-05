@@ -53,7 +53,6 @@ def register(cli):
                 altitude_tolerance=1e-6,
                 translate_to_origin=translate,
                 target_epsg_feet=False,
-                progress_callback=None,
                 label_height=label_height,
                 wgs84=wgs84
             )

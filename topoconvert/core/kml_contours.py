@@ -5,7 +5,7 @@ Adapted from GPSGrid kml_contours_to_dxf.py
 import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Optional, Tuple
 
 import click
 import ezdxf
@@ -34,7 +34,6 @@ def convert_kml_contours_to_dxf(
     altitude_tolerance: float = 1e-6,
     translate_to_origin: bool = True,
     target_epsg_feet: bool = False,
-    progress_callback: Optional[Callable] = None,
     label_height: float = 6.0,
     wgs84: bool = False
 ) -> None:
@@ -53,7 +52,6 @@ def convert_kml_contours_to_dxf(
         altitude_tolerance: Tolerance for constant altitude along contour
         translate_to_origin: Translate coordinates to origin
         target_epsg_feet: Whether target EPSG coordinates are in feet
-        progress_callback: Optional callback for progress updates
         label_height: Height of text labels in drawing units
         wgs84: Keep coordinates in WGS84 (no projection)
     
@@ -88,7 +86,6 @@ def convert_kml_contours_to_dxf(
             altitude_tolerance=altitude_tolerance,
             translate_to_origin=translate_to_origin,
             target_epsg_feet=target_epsg_feet,
-            progress_callback=progress_callback,
             label_height=label_height,
             wgs84=wgs84
         )
@@ -239,15 +236,10 @@ def _process_kml_contours_conversion(
     altitude_tolerance: float,
     translate_to_origin: bool,
     target_epsg_feet: bool,
-    progress_callback: Optional[Callable],
     label_height: float = 6.0,
     wgs84: bool = False
 ) -> None:
     """Process KML contours conversion - internal implementation."""
-    
-    # Initialize progress
-    if progress_callback:
-        progress_callback("Loading KML file", 0)
     
     try:
         tree = ET.parse(str(input_file))
@@ -255,9 +247,6 @@ def _process_kml_contours_conversion(
         raise FileFormatError(f"Invalid KML file: {e}")
     
     root = tree.getroot()
-    
-    if progress_callback:
-        progress_callback("Setting up coordinate transformation", 10)
     
     # Find first coordinate to determine UTM zone if needed
     sample_point = None
@@ -291,9 +280,6 @@ def _process_kml_contours_conversion(
     except Exception:
         doc.header["$INSUNITS"] = 2
     
-    if progress_callback:
-        progress_callback("Analyzing placemarks", 20)
-    
     # First pass: collect all points to find bounds/reference point
     all_points = []
     if translate_to_origin:
@@ -312,9 +298,6 @@ def _process_kml_contours_conversion(
         ref_x = (min(xs) + max(xs)) / 2.0
         ref_y = (min(ys) + max(ys)) / 2.0
     
-    if progress_callback:
-        progress_callback("Processing contour lines", 40)
-    
     # Iterate placemarks
     pms = root.findall(".//kml:Placemark", NS)
     count = 0
@@ -322,10 +305,6 @@ def _process_kml_contours_conversion(
     total_pms = len(pms)
     
     for i, pm in enumerate(pms):
-        if progress_callback and i % max(1, total_pms // 10) == 0:
-            progress_callback(f"Processing placemark {i+1}/{total_pms}", 
-                            int(40 + (i / total_pms) * 40))
-        
         lines = _collect_linestrings(pm)
         if not lines:
             continue
@@ -385,9 +364,6 @@ def _process_kml_contours_conversion(
                     align=TextEntityAlignment.MIDDLE_CENTER
                 )
     
-    if progress_callback:
-        progress_callback("Saving DXF file", 90)
-    
     doc.saveas(str(output_file))
     
     # Print summary
@@ -410,6 +386,3 @@ def _process_kml_contours_conversion(
             click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f})")
         else:
             click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f})")
-    
-    if progress_callback:
-        progress_callback("Complete", 100)

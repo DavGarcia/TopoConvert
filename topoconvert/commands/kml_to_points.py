@@ -57,7 +57,7 @@ def register(cli):
                 raise click.ClickException("Cannot use both --target-epsg and --wgs84")
             
             # Extract points
-            extract_points(
+            result = extract_points(
                 input_file=input_path,
                 output_file=output_path,
                 output_format=format,
@@ -67,9 +67,48 @@ def register(cli):
                 layer_name=layer_name,
                 point_color=point_color,
                 target_epsg=target_epsg if format == 'dxf' else None,
-                wgs84=wgs84 if format == 'dxf' else False,
-                progress_callback=None
+                wgs84=wgs84 if format == 'dxf' else False
             )
+            
+            # Display results
+            click.echo(f"\nCreated {result.format} file: {result.output_file}")
+            click.echo(f"- {result.point_count} points")
+            
+            if result.format == 'DXF':
+                click.echo(f"- Layer: {result.details.get('layer_name', 'GPS_POINTS')}")
+                
+                if result.translated_to_origin and result.reference_point:
+                    ref_x, ref_y, ref_z = result.reference_point
+                    if result.details.get('use_reference_point'):
+                        if result.details.get('wgs84'):
+                            click.echo(f"- Reference point (excluded): ({ref_x:.6f}, {ref_y:.6f}, {ref_z:.2f})")
+                        else:
+                            click.echo(f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+                        click.echo(f"- First point translated to origin")
+                    else:
+                        if result.details.get('wgs84'):
+                            click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f}, {ref_z:.2f})")
+                        else:
+                            click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+                
+                # Output coordinate system info
+                click.echo(f"- Coordinates in {result.coordinate_system}")
+                
+                # Print coordinate ranges
+                if result.coordinate_ranges:
+                    ranges = result.coordinate_ranges
+                    units = ranges.get('units', 'ft')
+                    if units == 'degrees':
+                        click.echo(f"- X range: {ranges['x'][0]:.6f} to {ranges['x'][1]:.6f} {units}")
+                        click.echo(f"- Y range: {ranges['y'][0]:.6f} to {ranges['y'][1]:.6f} {units}")
+                        z_unit = "m" if result.elevation_units == "meters" else "ft"
+                        click.echo(f"- Z range: {ranges['z'][0]:.1f} to {ranges['z'][1]:.1f} {z_unit}")
+                    else:
+                        click.echo(f"- X range: {ranges['x'][0]:.1f} to {ranges['x'][1]:.1f} {units}")
+                        click.echo(f"- Y range: {ranges['y'][0]:.1f} to {ranges['y'][1]:.1f} {units}")
+                        click.echo(f"- Z range: {ranges['z'][0]:.1f} to {ranges['z'][1]:.1f} {units}")
+            else:
+                click.echo(f"- Elevation units: {result.elevation_units}")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

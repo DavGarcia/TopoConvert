@@ -41,8 +41,7 @@ def register(cli):
                 csv_files=csv_paths,
                 output_file=Path(output),
                 target_epsg=target_epsg,
-                wgs84=wgs84,
-                progress_callback=None
+                wgs84=wgs84
             )
             
             # Display results

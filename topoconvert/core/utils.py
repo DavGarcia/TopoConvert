@@ -1,5 +1,4 @@
 """Common utility functions for TopoConvert."""
-import click
 from pathlib import Path
 from typing import Union, Callable, Optional
 import numpy as np
@@ -79,37 +78,6 @@ def convert_elevation_units(value: float, from_unit: str, to_unit: str) -> float
     return value
 
 
-def create_progress_callback(
-    label: str = "Processing",
-    length: Optional[int] = None,
-    show: bool = True
-) -> Callable:
-    """Create a progress callback for long operations.
-    
-    Args:
-        label: Progress bar label
-        length: Total number of items (None for indeterminate)
-        show: Whether to show progress
-        
-    Returns:
-        Progress callback function
-    """
-    if not show:
-        # Return a no-op function
-        no_op = lambda *args, **kwargs: None
-        no_op.close = lambda: None
-        return no_op
-    
-    # For simple percentage-based progress updates
-    def callback(message: str = "", percent: int = 0):
-        """Update progress with a message and percentage."""
-        # This is a placeholder - the actual implementation should use
-        # the progress tracking from the core modules
-        pass
-    
-    callback.close = lambda: None
-    
-    return callback
 
 
 def meters_to_feet(meters: float) -> float:

@@ -45,8 +45,7 @@ def register(cli):
                 buffer=buffer,
                 boundary_type=boundary_type,
                 point_style=point_style,
-                grid_name=grid_name,
-                progress_callback=None
+                grid_name=grid_name
             )
                 
         except TopoConvertError as e:

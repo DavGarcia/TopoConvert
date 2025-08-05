@@ -7,7 +7,6 @@ from topoconvert.core.utils import (
     validate_file_path,
     ensure_file_extension,
     convert_elevation_units,
-    create_progress_callback,
     meters_to_feet,
     feet_to_meters,
     parse_color_string,
@@ -288,46 +287,3 @@ class TestCalculateBounds:
         assert bounds == (-5, 0, 10, 10)
 
 
-class TestCreateProgressCallback:
-    """Test cases for create_progress_callback function."""
-    
-    def test_create_with_show_true(self):
-        """Test creating progress callback with show=True."""
-        callback = create_progress_callback(
-            label="Testing",
-            length=100,
-            show=True
-        )
-        
-        # Should be callable
-        assert callable(callback)
-        assert hasattr(callback, 'close')
-        
-        # Should not raise errors when called
-        callback("Processing", 50)
-        callback.close()
-    
-    def test_create_with_show_false(self):
-        """Test creating progress callback with show=False."""
-        callback = create_progress_callback(
-            label="Testing",
-            length=100,
-            show=False
-        )
-        
-        # Should be callable
-        assert callable(callback)
-        assert hasattr(callback, 'close')
-        
-        # Should be no-op
-        callback("Processing", 50)
-        callback.close()
-    
-    def test_default_parameters(self):
-        """Test progress callback with default parameters."""
-        callback = create_progress_callback()
-        
-        assert callable(callback)
-        callback("Test", 0)
-        callback("Test", 100)
-        callback.close()

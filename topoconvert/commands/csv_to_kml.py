@@ -39,7 +39,7 @@ def register(cli):
         """
         try:
             # Convert CSV to KML
-            convert_csv_to_kml(
+            result = convert_csv_to_kml(
                 input_file=Path(input_file),
                 output_file=Path(output_file),
                 elevation_units=elevation_units,
@@ -50,9 +50,33 @@ def register(cli):
                 kml_name=kml_name,
                 x_column=x_column,
                 y_column=y_column,
-                z_column=z_column,
-                progress_callback=None
+                z_column=z_column
             )
+            
+            # Display results
+            click.echo(f"\nCreated KML file: {result.output_file}")
+            click.echo(f"- {result.valid_points} GPS points written")
+            click.echo(f"- Elevation units: {result.elevation_units}")
+            click.echo(f"- Point style: {result.point_style}")
+            if result.has_labels:
+                click.echo("- Elevation labels included")
+            
+            # Print coordinate bounds
+            if result.coordinate_bounds:
+                bounds = result.coordinate_bounds
+                click.echo(f"- Latitude range: {bounds['latitude'][0]:.6f} to {bounds['latitude'][1]:.6f}")
+                click.echo(f"- Longitude range: {bounds['longitude'][0]:.6f} to {bounds['longitude'][1]:.6f}")
+                
+                if 'elevation' in bounds:
+                    elev_range = bounds['elevation']
+                    click.echo(f"- Elevation range: {elev_range[0]:.2f} to {elev_range[1]:.2f} {result.elevation_units}")
+                elif not result.details.get('has_elevation', True):
+                    click.echo(f"- Elevation: 0.00 {result.elevation_units} (no elevation data)")
+            
+            # Display warnings if any
+            if result.warnings:
+                for warning in result.warnings:
+                    click.echo(f"Warning: {warning}", err=True)
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

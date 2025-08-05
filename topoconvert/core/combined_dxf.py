@@ -3,7 +3,7 @@
 Adapted from GPSGrid combined_dxf.py
 """
 from pathlib import Path
-from typing import List, Optional, Callable
+from typing import List, Optional
 
 import ezdxf
 import pandas as pd
@@ -22,8 +22,7 @@ def merge_csv_to_dxf(
     csv_files: List[Path],
     output_file: Path,
     target_epsg: Optional[int] = None,
-    wgs84: bool = False,
-    progress_callback: Optional[Callable] = None
+    wgs84: bool = False
 ) -> CombinedDXFResult:
     """Merge multiple CSV files into a single DXF with 3D points.
     
@@ -35,7 +34,6 @@ def merge_csv_to_dxf(
         output_file: Path to output DXF file
         target_epsg: Target EPSG code for projection (default: auto-detect UTM)
         wgs84: Keep coordinates in WGS84 (no projection)
-        progress_callback: Optional callback for progress updates
     
     Raises:
         FileNotFoundError: If any input file doesn't exist
@@ -57,8 +55,7 @@ def merge_csv_to_dxf(
             csv_files=validated_files,
             output_file=output_file,
             target_epsg=target_epsg,
-            wgs84=wgs84,
-            progress_callback=progress_callback
+            wgs84=wgs84
         )
     except Exception as e:
         raise ProcessingError(f"CSV merge failed: {str(e)}") from e
@@ -120,14 +117,9 @@ def _process_csv_merge(
     csv_files: List[Path],
     output_file: Path,
     target_epsg: Optional[int],
-    wgs84: bool,
-    progress_callback: Optional[Callable]
+    wgs84: bool
 ) -> CombinedDXFResult:
     """Process CSV merge - internal implementation."""
-    
-    # Initialize progress
-    if progress_callback:
-        progress_callback("Setting up coordinate transformation", 0)
     
     # Determine target CRS using first CSV file's first point
     sample_df = pd.read_csv(str(csv_files[0]))
@@ -149,9 +141,6 @@ def _process_csv_merge(
     # Read & transform each CSV
     total_files = len(csv_files)
     for i, csv_file in enumerate(csv_files):
-        if progress_callback:
-            progress_callback(f"Processing {csv_file.name}", int(20 + (i / total_files) * 40))
-        
         df, has_elevation = _read_and_transform_csv(csv_file, transformer, wgs84)
         
         # Accumulate for global min
@@ -166,16 +155,10 @@ def _process_csv_merge(
         # Store for result reporting
         datasets.append((basename, df, elevation_msg))
     
-    if progress_callback:
-        progress_callback("Computing coordinate bounds", 60)
-    
     # Compute global min corner
     global_min_x = min(all_x) if all_x else 0.0
     global_min_y = min(all_y) if all_y else 0.0
     global_min_z = min(all_z) if all_z else 0.0
-    
-    if progress_callback:
-        progress_callback("Creating DXF file", 70)
     
     # Create a single DXF
     doc = ezdxf.new("R2010")
@@ -198,9 +181,6 @@ def _process_csv_merge(
     total_points = 0
     layers_created = []
     for i, (basename, df, _) in enumerate(datasets):
-        if progress_callback:
-            progress_callback(f"Adding layer {basename}", int(70 + (i / len(datasets)) * 25))
-        
         color_idx = color_list[i % len(color_list)]
         layer_name = f"{basename}_POINTS"
         
@@ -218,9 +198,6 @@ def _process_csv_merge(
         
         total_points += len(df)
         layers_created.append(layer_name)
-    
-    if progress_callback:
-        progress_callback("Saving DXF file", 95)
     
     # Save the combined file
     doc.saveas(str(output_file))
@@ -259,9 +236,6 @@ def _process_csv_merge(
                 "z": (0.0, z_range),
                 "units": {"x": "feet", "y": "feet", "z": "feet"}
             }
-    
-    if progress_callback:
-        progress_callback("Complete", 100)
     
     # Return structured result
     return CombinedDXFResult(

@@ -5,7 +5,7 @@ Adapted from GPSGrid kml_to_slope_heatmap.py
 import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional
 
 import warnings
 import click
@@ -384,8 +384,7 @@ def generate_slope_heatmap(
     contour_interval: float = 5.0,
     figsize: Optional[List[float]] = None,
     target_slope: Optional[float] = None,
-    stats_position: str = 'outside',
-    progress_callback: Optional[Callable] = None
+    stats_position: str = 'outside'
 ) -> None:
     """
     Generate a slope heatmap from KML point data.
@@ -406,7 +405,6 @@ def generate_slope_heatmap(
         figsize: Figure size in inches [width, height] (defaults to [10, 8])
         target_slope: Target slope for yellow color (in current units)
         stats_position: Position of statistics text ('inside', 'outside', 'none')
-        progress_callback: Optional progress callback
     """
     # Validate input
     input_file = Path(input_file)
@@ -415,9 +413,6 @@ def generate_slope_heatmap(
     
     output_file = Path(output_file)
     
-    if progress_callback:
-        progress_callback("Extracting points from KML", 10)
-    
     # Extract points from KML
     points = _extract_points(input_file)
     
@@ -425,9 +420,6 @@ def generate_slope_heatmap(
         raise ProcessingError("No points found in KML file")
     
     click.echo(f"Found {len(points)} points in KML")
-    
-    if progress_callback:
-        progress_callback("Computing slope data", 30)
     
     # Compute slope data using pure computation function
     slope_data = compute_slope_from_points(
@@ -438,9 +430,6 @@ def generate_slope_heatmap(
         run_length=run_length,
         smooth=smooth
     )
-    
-    if progress_callback:
-        progress_callback("Creating visualization", 80)
     
     # Use the new render function for visualization
     render_slope_heatmap(
@@ -459,9 +448,6 @@ def generate_slope_heatmap(
         run_length=run_length
     )
     
-    if progress_callback:
-        progress_callback("Saving image", 95)
-    
     # Summary
     click.echo(f"\nCreated slope heatmap: {output_file}")
     click.echo(f"- Grid resolution: {grid_resolution}x{grid_resolution}")
@@ -469,9 +455,6 @@ def generate_slope_heatmap(
     if smooth > 0:
         click.echo(f"- Smoothing applied: sigma={smooth}")
     click.echo(f"- Output resolution: {dpi} DPI")
-    
-    if progress_callback:
-        progress_callback("Complete", 100)
 
 
 def _parse_coordinates(coord_text: str) -> Optional[Tuple[float, float, float]]:

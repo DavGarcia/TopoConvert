@@ -3,13 +3,13 @@
 Adapted from GPSGrid csv_to_kml.py
 """
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional
 
-import click
 import pandas as pd
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
+from topoconvert.core.result_types import CSVToKMLResult
 
 
 def convert_csv_to_kml(
@@ -23,9 +23,8 @@ def convert_csv_to_kml(
     kml_name: Optional[str] = None,
     x_column: str = 'Longitude',
     y_column: str = 'Latitude',
-    z_column: str = 'Elevation',
-    progress_callback: Optional[Callable] = None
-) -> None:
+    z_column: str = 'Elevation'
+) -> CSVToKMLResult:
     """Convert CSV survey data to KML format.
     
     Args:
@@ -40,7 +39,6 @@ def convert_csv_to_kml(
         x_column: Column name for X/longitude
         y_column: Column name for Y/latitude
         z_column: Column name for Z/elevation
-        progress_callback: Optional callback for progress updates
         
     Raises:
         FileNotFoundError: If input file doesn't exist
@@ -73,7 +71,7 @@ def convert_csv_to_kml(
         raise ValueError("point_scale must be positive")
     
     try:
-        _process_csv_to_kml(
+        return _process_csv_to_kml(
             input_file=input_file,
             output_file=output_file,
             elevation_units=elevation_units,
@@ -84,8 +82,7 @@ def convert_csv_to_kml(
             kml_name=kml_name,
             x_column=x_column,
             y_column=y_column,
-            z_column=z_column,
-            progress_callback=progress_callback
+            z_column=z_column
         )
     except Exception as e:
         raise ProcessingError(f"CSV to KML conversion failed: {str(e)}") from e
@@ -152,14 +149,9 @@ def _process_csv_to_kml(
     kml_name: Optional[str],
     x_column: str,
     y_column: str,
-    z_column: str,
-    progress_callback: Optional[Callable]
-) -> None:
+    z_column: str
+) -> CSVToKMLResult:
     """Process CSV to KML conversion - internal implementation."""
-    
-    # Initialize progress
-    if progress_callback:
-        progress_callback("Reading CSV file", 0)
     
     # Read CSV file
     try:
@@ -178,16 +170,15 @@ def _process_csv_to_kml(
     
     # Check if elevation column exists
     has_elevation = z_column in df.columns
+    # Track warnings
+    warnings = []
     if not has_elevation:
-        click.echo(f"Warning: Elevation column '{z_column}' not found. Using 0 for all elevations.")
+        warnings.append(f"Elevation column '{z_column}' not found. Using 0 for all elevations.")
     
     if len(df) == 0:
         raise ProcessingError("CSV file is empty")
     
-    click.echo(f"Found {len(df)} points in CSV")
-    
-    if progress_callback:
-        progress_callback("Validating coordinates", 20)
+    # Found {len(df)} points in CSV
     
     # Set KML document name
     if kml_name is None:
@@ -197,19 +188,12 @@ def _process_csv_to_kml(
     style_id = "gpsPointStyle"
     icon_url = _get_icon_url(point_style)
     
-    if progress_callback:
-        progress_callback("Writing KML file", 40)
-    
     # Create output KML
     try:
         with open(output_file, 'w', encoding='utf-8') as f:
             # Write header
             f.write(_create_kml_header(kml_name, style_id, point_color, 
                                       point_scale, icon_url))
-            
-            # Track progress for points
-            total_points = len(df)
-            points_per_update = max(1, total_points // 50)  # Update every 2%
             
             # Write points
             valid_points = 0
@@ -220,18 +204,13 @@ def _process_csv_to_kml(
                 
                 # Validate coordinates
                 if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
-                    click.echo(f"Warning: Invalid coordinates at row {idx+1}: lat={lat}, lon={lon}")
+                    warnings.append(f"Invalid coordinates at row {idx+1}: lat={lat}, lon={lon}")
                     continue
                 
                 placemark = _create_placemark(lat, lon, elev, style_id, 
                                             idx + 1, add_labels, elevation_units)
                 f.write(placemark)
                 valid_points += 1
-                
-                # Update progress
-                if progress_callback and (idx + 1) % points_per_update == 0:
-                    progress_pct = 40 + int((idx + 1) / total_points * 50)
-                    progress_callback(f"Writing point {idx + 1}/{total_points}", progress_pct)
             
             # Write footer
             f.write('  </Document>\n</kml>\n')
@@ -239,29 +218,37 @@ def _process_csv_to_kml(
     except Exception as e:
         raise ProcessingError(f"Error writing KML file: {e}")
     
-    if progress_callback:
-        progress_callback("Finalizing", 95)
-    
-    # Print summary
-    click.echo(f"\nCreated KML file: {output_file}")
-    click.echo(f"- {valid_points} GPS points written")
-    click.echo(f"- Elevation units: {elevation_units}")
-    click.echo(f"- Point style: {point_style}")
-    if add_labels:
-        click.echo("- Elevation labels included")
-    
-    # Print coordinate bounds
+    # Build coordinate bounds
     lat_range = (df[y_column].min(), df[y_column].max())
     lon_range = (df[x_column].min(), df[x_column].max())
     
-    click.echo(f"- Latitude range: {lat_range[0]:.6f} to {lat_range[1]:.6f}")
-    click.echo(f"- Longitude range: {lon_range[0]:.6f} to {lon_range[1]:.6f}")
+    coordinate_bounds = {
+        'latitude': lat_range,
+        'longitude': lon_range
+    }
     
     if has_elevation:
         elev_range = (df[z_column].min(), df[z_column].max())
-        click.echo(f"- Elevation range: {elev_range[0]:.2f} to {elev_range[1]:.2f} {elevation_units}")
-    else:
-        click.echo(f"- Elevation: 0.00 {elevation_units} (no elevation data)")
+        coordinate_bounds['elevation'] = elev_range
     
-    if progress_callback:
-        progress_callback("Complete", 100)
+    # Return result
+    return CSVToKMLResult(
+        success=True,
+        output_file=str(output_file),
+        valid_points=valid_points,
+        elevation_units=elevation_units,
+        point_style=point_style,
+        has_labels=add_labels,
+        coordinate_bounds=coordinate_bounds,
+        warnings=warnings,
+        details={
+            "csv_points_found": len(df),
+            "kml_name": kml_name,
+            "point_color": point_color,
+            "point_scale": point_scale,
+            "x_column": x_column,
+            "y_column": y_column,
+            "z_column": z_column,
+            "has_elevation": has_elevation
+        }
+    )

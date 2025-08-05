@@ -389,24 +389,3 @@ class TestGenerateContoursCoreFunction:
                 # Acceptable if it fails due to insufficient data
                 assert "insufficient" in str(e).lower() or "not enough" in str(e).lower()
     
-    def test_generate_contours_progress_callback(self, grid_kml):
-        """Test that progress callback is called during processing."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_file = Path(temp_dir) / "contours.dxf"
-            
-            progress_calls = []
-            
-            def progress_callback(message, percent):
-                progress_calls.append((message, percent))
-            
-            generate_contours(
-                input_file=grid_kml,
-                output_file=output_file,
-                progress_callback=progress_callback
-            )
-            
-            # Verify progress was reported
-            assert len(progress_calls) > 0
-            # Check that progress went from 0 to 100
-            assert any(p[1] == 0 for p in progress_calls)
-            assert any(p[1] == 100 for p in progress_calls)
