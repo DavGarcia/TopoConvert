@@ -65,10 +65,41 @@ def compute_slope_from_points(
     if len(points) < 3:
         raise ProcessingError("Need at least 3 points for slope calculation")
     
+    # Validate parameters
+    if grid_resolution <= 0:
+        raise ValueError(f"Grid resolution must be positive, got {grid_resolution}")
+    
+    if slope_units not in ['degrees', 'percent', 'rise-run']:
+        raise ValueError(f"Invalid slope units: {slope_units}. Must be 'degrees', 'percent', or 'rise-run'")
+    
+    if elevation_units not in ['meters', 'feet']:
+        # Warn but continue, treating as meters
+        warnings.warn(f"Unknown elevation units: {elevation_units}. Treating as meters.", UserWarning)
+    
+    if smooth < 0:
+        warnings.warn(f"Negative smoothing value {smooth} will be treated as 0 (no smoothing)", UserWarning)
+        smooth = 0.0
+    
     # Extract coordinates and elevations
     lons = [p[0] for p in points]
     lats = [p[1] for p in points]
     elevs = [p[2] for p in points]
+    
+    # Validate coordinates
+    for i, (lon, lat) in enumerate(zip(lons, lats)):
+        if not -180 <= lon <= 180:
+            warnings.warn(f"Point {i}: Longitude {lon} is outside valid range [-180, 180]", UserWarning)
+        if not -90 <= lat <= 90:
+            warnings.warn(f"Point {i}: Latitude {lat} is outside valid range [-90, 90]", UserWarning)
+    
+    # Check for duplicate points
+    unique_coords = set(zip(lons, lats))
+    if len(unique_coords) < len(points):
+        warnings.warn(f"Duplicate coordinate points detected: {len(points)} points reduced to {len(unique_coords)} unique locations", UserWarning)
+    
+    # Check if all points are at same location
+    if len(unique_coords) == 1:
+        raise ValueError("All points are at the same location. Need spatial variation for slope calculation.")
     
     # Convert elevation to feet if needed
     if elevation_units == 'meters':
@@ -205,7 +236,7 @@ def render_slope_heatmap(
     max_slope: Optional[float] = None,
     colormap: str = 'RdYlGn_r',
     dpi: int = 150,
-    show_contours: bool = False,
+    show_contours: bool = True,
     contour_interval: float = 5.0,
     figsize: Optional[List[float]] = None,
     target_slope: Optional[float] = None,
@@ -228,7 +259,7 @@ def render_slope_heatmap(
         max_slope: Maximum slope for color scale (auto if None)
         colormap: Matplotlib colormap name
         dpi: Output resolution
-        show_contours: Whether to overlay elevation contours
+        show_contours: Whether to overlay elevation contours (default: True)
         contour_interval: Contour interval in feet
         figsize: Figure size [width, height]
         target_slope: Target slope for yellow color
@@ -252,12 +283,18 @@ def render_slope_heatmap(
     if target_slope is not None:
         # Create custom colormap centered on target slope
         vmin = 0
-        vmax = max_slope if max_slope is not None else np.nanmax(slope_grid)
+        try:
+            vmax = max_slope if max_slope is not None else np.nanmax(slope_grid)
+        except (ValueError, RuntimeWarning):  # All NaN case
+            vmax = 90.0  # Default max slope for degrees
         custom_cmap, norm = _create_target_colormap(target_slope, vmin, vmax)
         used_colormap = custom_cmap
     else:
         vmin = 0
-        vmax = max_slope if max_slope is not None else np.nanmax(slope_grid)
+        try:
+            vmax = max_slope if max_slope is not None else np.nanmax(slope_grid)
+        except (ValueError, RuntimeWarning):  # All NaN case
+            vmax = 90.0  # Default max slope for degrees
         norm = colors.Normalize(vmin=vmin, vmax=vmax)
         used_colormap = colormap
     
@@ -271,14 +308,22 @@ def render_slope_heatmap(
     
     # Add contours if requested
     if show_contours:
-        contour_levels = np.arange(
-            np.floor(np.nanmin(Zi) / contour_interval) * contour_interval,
-            np.ceil(np.nanmax(Zi) / contour_interval) * contour_interval + contour_interval,
-            contour_interval
-        )
-        cs = ax.contour(Xi, Yi, Zi, levels=contour_levels, colors='black', 
-                       linewidths=0.5, alpha=0.5)
-        ax.clabel(cs, inline=True, fontsize=8, fmt='%g ft')
+        try:
+            z_min = np.nanmin(Zi)
+            z_max = np.nanmax(Zi)
+            if np.isfinite(z_min) and np.isfinite(z_max):
+                contour_levels = np.arange(
+                    np.floor(z_min / contour_interval) * contour_interval,
+                    np.ceil(z_max / contour_interval) * contour_interval + contour_interval,
+                    contour_interval
+                )
+                if len(contour_levels) > 1:
+                    cs = ax.contour(Xi, Yi, Zi, levels=contour_levels, colors='black', 
+                                   linewidths=0.5, alpha=0.5)
+                    ax.clabel(cs, inline=True, fontsize=8, fmt='%g ft')
+        except (ValueError, RuntimeWarning):
+            # Skip contours if all NaN or other issues
+            pass
     
     # Add colorbar
     divider = make_axes_locatable(ax)
@@ -335,7 +380,7 @@ def generate_slope_heatmap(
     colormap: str = 'RdYlGn_r',
     dpi: int = 150,
     smooth: float = 1.0,
-    show_contours: bool = False,
+    show_contours: bool = True,
     contour_interval: float = 5.0,
     figsize: Optional[List[float]] = None,
     target_slope: Optional[float] = None,
@@ -356,7 +401,7 @@ def generate_slope_heatmap(
         colormap: Matplotlib colormap
         dpi: Output image DPI
         smooth: Gaussian smoothing sigma (0 = no smoothing)
-        show_contours: Overlay elevation contours on the slope map
+        show_contours: Overlay elevation contours on the slope map (default: True)
         contour_interval: Contour interval in feet
         figsize: Figure size in inches [width, height] (defaults to [10, 8])
         target_slope: Target slope for yellow color (in current units)
@@ -433,10 +478,16 @@ def _parse_coordinates(coord_text: str) -> Optional[Tuple[float, float, float]]:
     """Parse KML coordinate string (lon,lat,elev)"""
     parts = coord_text.strip().split(",")
     if len(parts) >= 2:
-        lon = float(parts[0])
-        lat = float(parts[1])
-        elev = float(parts[2]) if len(parts) >= 3 and parts[2] else 0.0
-        return (lon, lat, elev)
+        try:
+            lon = float(parts[0])
+            lat = float(parts[1])
+            elev = float(parts[2]) if len(parts) >= 3 and parts[2] else 0.0
+            return (lon, lat, elev)
+        except ValueError:
+            # Handle empty strings or non-numeric values
+            if any(part.strip() for part in parts):  # If any non-empty parts, it's an error
+                raise
+            return None
     return None
 
 
@@ -447,20 +498,35 @@ def _extract_points(kml_path: Path) -> List[Tuple[float, float, float]]:
         root = tree.getroot()
         
         points = []
+        placemark_count = 0
         
         # Find all Placemarks with Points
         for pm in root.findall(".//kml:Placemark", NS):
+            placemark_count += 1
             point_elem = pm.find(".//kml:Point", NS)
             if point_elem is not None:
                 coord_elem = point_elem.find("kml:coordinates", NS)
                 if coord_elem is not None and coord_elem.text:
-                    coord = _parse_coordinates(coord_elem.text)
-                    if coord:
-                        points.append(coord)
+                    try:
+                        coord = _parse_coordinates(coord_elem.text)
+                        if coord:
+                            points.append(coord)
+                    except ValueError as ve:
+                        warnings.warn(f"Skipping invalid coordinates in Placemark {placemark_count}: {ve}", UserWarning)
+        
+        # Provide helpful error messages
+        if placemark_count == 0:
+            raise ProcessingError("No Placemarks found in KML file. Expected KML file with Point placemarks.")
+        elif len(points) == 0:
+            raise ProcessingError(f"Found {placemark_count} Placemarks but no valid Point coordinates. Check that Placemarks contain Point elements with coordinates.")
         
         return points
+    except ET.ParseError as e:
+        raise ProcessingError(f"Invalid KML file format: {e}. Ensure the file is valid XML.")
+    except ProcessingError:
+        raise  # Re-raise our own errors
     except Exception as e:
-        raise ProcessingError(f"Error reading KML file: {e}")
+        raise ProcessingError(f"Unexpected error reading KML file: {e}")
 
 
 def _calculate_slope(Z, dx, dy, units='degrees', run_length=10.0):

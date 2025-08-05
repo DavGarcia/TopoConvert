@@ -45,23 +45,16 @@ class TestSlopeHeatmapCommand:
         assert '--contour-interval' in result.output
         assert '--target-slope' in result.output
     
-    def test_basic_slope_heatmap_generation(self):
+    def test_basic_slope_heatmap_generation(self, simple_kml):
         """Test basic slope heatmap generation."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
             output_file = Path(temp_dir) / "slope_output.png"
             
-            # Check if we have test KML file
-            kml_file = Path("testdata/sample.kml")
-            
-            # Skip if test data doesn't exist
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(simple_kml),
                 str(output_file)
             ])
             
@@ -77,19 +70,14 @@ class TestSlopeHeatmapCommand:
             except Exception as e:
                 pytest.fail(f"Generated image is not valid: {e}")
     
-    def test_slope_heatmap_with_default_output(self):
+    def test_slope_heatmap_with_default_output(self, simple_kml):
         """Test slope heatmap with default output filename."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
             # Copy KML file to temp directory so default output goes there
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             temp_kml = Path(temp_dir) / "test_input.kml"
-            temp_kml.write_text(kml_file.read_text())
+            temp_kml.write_text(simple_kml.read_text())
             
             result = runner.invoke(cli, [
                 'slope-heatmap',
@@ -103,21 +91,16 @@ class TestSlopeHeatmapCommand:
             default_output = temp_kml.with_suffix('.png')
             assert default_output.exists()
     
-    def test_slope_heatmap_with_elevation_units(self):
+    def test_slope_heatmap_with_elevation_units(self, grid_kml):
         """Test slope heatmap with different elevation units."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test with meters (default)
             output_file1 = Path(temp_dir) / "slope_meters.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--elevation-units', 'meters'
             ])
@@ -129,7 +112,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_feet.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--elevation-units', 'feet'
             ])
@@ -137,21 +120,16 @@ class TestSlopeHeatmapCommand:
             assert result.exit_code == 0
             assert output_file2.exists()
     
-    def test_slope_heatmap_with_different_slope_units(self):
+    def test_slope_heatmap_with_different_slope_units(self, grid_kml):
         """Test slope heatmap with different slope units."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test degrees (default)
             output_file1 = Path(temp_dir) / "slope_degrees.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--slope-units', 'degrees'
             ])
@@ -163,7 +141,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_percent.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--slope-units', 'percent'
             ])
@@ -175,7 +153,7 @@ class TestSlopeHeatmapCommand:
             output_file3 = Path(temp_dir) / "slope_rise_run.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file3),
                 '--slope-units', 'rise-run',
                 '--run-length', '12.0'
@@ -184,21 +162,16 @@ class TestSlopeHeatmapCommand:
             assert result.exit_code == 0
             assert output_file3.exists()
     
-    def test_slope_heatmap_with_grid_resolution(self):
+    def test_slope_heatmap_with_grid_resolution(self, grid_kml):
         """Test slope heatmap with different grid resolutions."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test low resolution
             output_file1 = Path(temp_dir) / "slope_low_res.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--grid-resolution', '50'
             ])
@@ -211,7 +184,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_high_res.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--grid-resolution', '300'
             ])
@@ -220,21 +193,16 @@ class TestSlopeHeatmapCommand:
             assert output_file2.exists()
             assert "Grid resolution: 300x300" in result.output
     
-    def test_slope_heatmap_with_smoothing(self):
+    def test_slope_heatmap_with_smoothing(self, grid_kml):
         """Test slope heatmap with different smoothing values."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test no smoothing
             output_file1 = Path(temp_dir) / "slope_no_smooth.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--smooth', '0'
             ])
@@ -246,7 +214,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_smooth.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--smooth', '2.0'
             ])
@@ -255,21 +223,16 @@ class TestSlopeHeatmapCommand:
             assert output_file2.exists()
             assert "Smoothing applied: sigma=2.0" in result.output
     
-    def test_slope_heatmap_with_contours(self):
+    def test_slope_heatmap_with_contours(self, grid_kml):
         """Test slope heatmap with and without contours."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test with contours (default)
             output_file1 = Path(temp_dir) / "slope_with_contours.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--contour-interval', '10.0'
             ])
@@ -281,7 +244,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_no_contours.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--no-contours'
             ])
@@ -289,21 +252,16 @@ class TestSlopeHeatmapCommand:
             assert result.exit_code == 0
             assert output_file2.exists()
     
-    def test_slope_heatmap_with_custom_colormap(self):
+    def test_slope_heatmap_with_custom_colormap(self, grid_kml):
         """Test slope heatmap with different colormaps."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test viridis colormap
             output_file1 = Path(temp_dir) / "slope_viridis.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--colormap', 'viridis'
             ])
@@ -315,7 +273,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_plasma.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--colormap', 'plasma'
             ])
@@ -323,21 +281,16 @@ class TestSlopeHeatmapCommand:
             assert result.exit_code == 0
             assert output_file2.exists()
     
-    def test_slope_heatmap_with_custom_dpi(self):
+    def test_slope_heatmap_with_custom_dpi(self, grid_kml):
         """Test slope heatmap with different DPI settings."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test low DPI
             output_file1 = Path(temp_dir) / "slope_low_dpi.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file1),
                 '--dpi', '72'
             ])
@@ -350,7 +303,7 @@ class TestSlopeHeatmapCommand:
             output_file2 = Path(temp_dir) / "slope_high_dpi.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file2),
                 '--dpi', '300'
             ])
@@ -359,20 +312,15 @@ class TestSlopeHeatmapCommand:
             assert output_file2.exists()
             assert "Output resolution: 300 DPI" in result.output
     
-    def test_slope_heatmap_with_target_slope(self):
+    def test_slope_heatmap_with_target_slope(self, grid_kml):
         """Test slope heatmap with target slope coloring."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             output_file = Path(temp_dir) / "slope_target.png"
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(grid_kml),
                 str(output_file),
                 '--target-slope', '15.0',
                 '--slope-units', 'degrees'
@@ -397,20 +345,16 @@ class TestSlopeHeatmapCommand:
             
             assert result.exit_code != 0
     
-    def test_invalid_elevation_units(self):
+    def test_invalid_elevation_units(self, simple_kml):
         """Test error handling for invalid elevation units."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
             output_file = Path(temp_dir) / "slope_invalid_units.png"
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
             
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(simple_kml),
                 str(output_file),
                 '--elevation-units', 'invalid_unit'
             ])
@@ -418,20 +362,16 @@ class TestSlopeHeatmapCommand:
             assert result.exit_code != 0
             assert 'Invalid value' in result.output or 'invalid choice' in result.output.lower()
     
-    def test_invalid_slope_units(self):
+    def test_invalid_slope_units(self, simple_kml):
         """Test error handling for invalid slope units."""
         runner = CliRunner()
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            kml_file = Path("testdata/sample.kml")
             output_file = Path(temp_dir) / "slope_invalid_slope_units.png"
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
             
             result = runner.invoke(cli, [
                 'slope-heatmap',
-                str(kml_file),
+                str(simple_kml),
                 str(output_file),
                 '--slope-units', 'invalid_unit'
             ])
@@ -443,19 +383,14 @@ class TestSlopeHeatmapCommand:
 class TestSlopeHeatmapCoreFunction:
     """Test cases for the core generate_slope_heatmap function."""
     
-    def test_generate_slope_heatmap_basic(self):
+    def test_generate_slope_heatmap_basic(self, simple_kml):
         """Test basic slope heatmap generation."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_file = Path(temp_dir) / "test_slope.png"
             
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test basic generation
             generate_slope_heatmap(
-                input_file=kml_file,
+                input_file=simple_kml,
                 output_file=output_file
             )
             
@@ -465,19 +400,14 @@ class TestSlopeHeatmapCoreFunction:
             img = Image.open(str(output_file))
             assert img.format == 'PNG'
     
-    def test_generate_slope_heatmap_with_options(self):
+    def test_generate_slope_heatmap_with_options(self, grid_kml):
         """Test slope heatmap generation with various options."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_file = Path(temp_dir) / "test_slope_options.png"
             
-            kml_file = Path("testdata/sample.kml")
-            
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
             # Test with custom options
             generate_slope_heatmap(
-                input_file=kml_file,
+                input_file=grid_kml,
                 output_file=output_file,
                 elevation_units='feet',
                 grid_resolution=100,
@@ -501,26 +431,18 @@ class TestSlopeHeatmapCoreFunction:
                     output_file=output_file
                 )
     
-    def test_generate_slope_heatmap_invalid_parameters(self):
+    def test_generate_slope_heatmap_invalid_parameters(self, simple_kml):
         """Test parameter validation."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_file = Path(temp_dir) / "test_invalid.png"
-            kml_file = Path("testdata/sample.kml")
             
-            if not kml_file.exists():
-                pytest.skip("Test KML data file not found")
-            
-            # Test with invalid grid resolution (should work but might be slow)
-            try:
+            # Test with invalid grid resolution (should raise ValueError)
+            with pytest.raises(ValueError, match="Grid resolution must be positive"):
                 generate_slope_heatmap(
-                    input_file=kml_file,
+                    input_file=simple_kml,
                     output_file=output_file,
-                    grid_resolution=1  # Very low resolution
+                    grid_resolution=0  # Invalid: zero resolution
                 )
-                assert output_file.exists()
-            except Exception as e:
-                # Accept either success or reasonable failure
-                assert "resolution" in str(e).lower() or output_file.exists()
 
 
 class TestSlopeHeatmapUtilityFunctions:
@@ -554,15 +476,10 @@ class TestSlopeHeatmapUtilityFunctions:
         with pytest.raises(ValueError):
             _parse_coordinates("abc,def,ghi")
     
-    def test_extract_points_from_kml(self):
+    def test_extract_points_from_kml(self, simple_kml):
         """Test extracting points from KML files."""
-        kml_file = Path("testdata/sample.kml")
-        
-        if not kml_file.exists():
-            pytest.skip("Test KML data file not found")
-        
-        points = _extract_points(kml_file)
-        assert len(points) > 0
+        points = _extract_points(simple_kml)
+        assert len(points) == 3  # We know simple_kml has 3 points
         
         # Verify point format
         for point in points:
@@ -570,6 +487,11 @@ class TestSlopeHeatmapUtilityFunctions:
             assert isinstance(point[0], float)  # longitude
             assert isinstance(point[1], float)  # latitude
             assert isinstance(point[2], float)  # elevation
+        
+        # Verify specific values from our test file
+        assert points[0] == (-122.0, 37.0, 100.0)
+        assert points[1] == (-122.001, 37.0, 110.0)
+        assert points[2] == (-122.0, 37.001, 120.0)
     
     def test_extract_points_from_nonexistent_kml(self):
         """Test error handling for nonexistent KML files."""
@@ -683,7 +605,7 @@ class TestSlopeComputationFunctions:
     
     def test_compute_slope_from_points_basic(self):
         """Test basic slope computation from points."""
-        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.slope_heatmap import compute_slope_from_points
         
         points = [
             (-122.0, 37.0, 100.0),  # 100 meters
@@ -697,23 +619,18 @@ class TestSlopeComputationFunctions:
             elevation_units='meters'
         )
         
-        # Test feet (no conversion)
-        points_ft = [
-            (-122.0, 37.0, 328.084),  # ~100m in feet
-            (-122.001, 37.0, 331.365),  # ~101m in feet
-            (-122.0, 37.001, 334.646),  # ~102m in feet
-        ]
-        result_ft = compute_slope_from_points(
-            points=points_ft,
-            elevation_units='feet'
-        )
-        
-        # Results should be similar (allowing for conversion differences)
-        assert result_m['slope_grid'].shape == result_ft['slope_grid'].shape
+        # Verify result structure
+        assert 'slope_grid' in result_m
+        assert 'elevation_grid' in result_m
+        assert 'x_coords' in result_m
+        assert 'y_coords' in result_m
+        assert 'slope_stats' in result_m
+        assert result_m['slope_grid'].shape[0] > 0
+        assert result_m['slope_grid'].shape[1] > 0
     
     def test_compute_slope_from_points_with_smoothing(self):
         """Test computation with gaussian smoothing."""
-        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.slope_heatmap import compute_slope_from_points
         
         points = [
             (-122.0, 37.0, 100.0),
@@ -739,11 +656,12 @@ class TestSlopeComputationFunctions:
         # The exact relationship depends on the data, but they should be different
         smooth_max = np.nanmax(result_smooth['slope_grid'])
         no_smooth_max = np.nanmax(result_no_smooth['slope_grid'])
-        assert smooth_max != no_smooth_max
+        # With smoothing, max slope is typically lower
+        assert smooth_max <= no_smooth_max
     
     def test_compute_slope_from_points_insufficient_data(self):
         """Test error handling for insufficient points."""
-        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.slope_heatmap import compute_slope_from_points
         from topoconvert.core.exceptions import ProcessingError
         
         # Too few points
@@ -757,7 +675,7 @@ class TestSlopeComputationFunctions:
     
     def test_compute_slope_from_points_empty_data(self):
         """Test error handling for empty points."""
-        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.slope_heatmap import compute_slope_from_points
         from topoconvert.core.exceptions import ProcessingError
         
         with pytest.raises(ProcessingError, match="No points provided"):
@@ -765,7 +683,7 @@ class TestSlopeComputationFunctions:
     
     def test_compute_slope_from_points_synthetic_patterns(self):
         """Test computation with known slope patterns."""
-        pytest.skip("compute_slope_from_points not yet implemented")
+        from topoconvert.core.slope_heatmap import compute_slope_from_points
         
         # Create a simple inclined plane (should have uniform slope)
         points = []

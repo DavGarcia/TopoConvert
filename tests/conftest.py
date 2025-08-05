@@ -59,3 +59,52 @@ def sample_csv_file(temp_dir, sample_csv_content):
     csv_path = temp_dir / "sample.csv"
     csv_path.write_text(sample_csv_content)
     return csv_path
+
+
+# Fixtures for test KML files
+@pytest.fixture
+def fixtures_dir():
+    """Return path to test fixtures directory."""
+    return Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture
+def simple_kml(fixtures_dir):
+    """Return path to simple 3-point KML file."""
+    return fixtures_dir / "simple_3points.kml"
+
+
+@pytest.fixture
+def grid_kml(fixtures_dir):
+    """Return path to 4x4 grid KML file."""
+    return fixtures_dir / "grid_4x4.kml"
+
+
+@pytest.fixture
+def sparse_kml(fixtures_dir):
+    """Return path to sparse data KML file."""
+    return fixtures_dir / "sparse_data.kml"
+
+
+@pytest.fixture
+def steep_kml(fixtures_dir):
+    """Return path to steep slope KML file."""
+    return fixtures_dir / "steep_slope.kml"
+
+
+@pytest.fixture
+def no_elevation_kml(fixtures_dir):
+    """Return path to no elevation KML file."""
+    return fixtures_dir / "no_elevation.kml"
+
+
+@pytest.fixture
+def empty_kml(fixtures_dir):
+    """Return path to empty KML file."""
+    return fixtures_dir / "empty.kml"
+
+
+@pytest.fixture
+def invalid_coords_kml(fixtures_dir):
+    """Return path to KML with invalid coordinates."""
+    return fixtures_dir / "invalid_coords.kml"

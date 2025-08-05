@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sparse Data Test</name>
+    <description>Very sparse points to test interpolation fallback</description>
+    
+    <Placemark>
+      <name>Sparse 1</name>
+      <Point>
+        <coordinates>-122.0,37.0,100</coordinates>
+      </Point>
+    </Placemark>
+    
+    <Placemark>
+      <name>Sparse 2</name>
+      <Point>
+        <coordinates>-122.01,37.0,110</coordinates>
+      </Point>
+    </Placemark>
+    
+    <Placemark>
+      <name>Sparse 3</name>
+      <Point>
+        <coordinates>-122.0,37.01,120</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>

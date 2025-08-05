@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>No Elevation Test</name>
+    <description>Points without elevation data (should default to 0)</description>
+    
+    <Placemark>
+      <name>NoElev 1</name>
+      <Point>
+        <coordinates>-122.0,37.0</coordinates>
+      </Point>
+    </Placemark>
+    
+    <Placemark>
+      <name>NoElev 2</name>
+      <Point>
+        <coordinates>-122.001,37.0</coordinates>
+      </Point>
+    </Placemark>
+    
+    <Placemark>
+      <name>NoElev 3</name>
+      <Point>
+        <coordinates>-122.0,37.001</coordinates>
+      </Point>
+    </Placemark>
+    
+    <!-- Mixed: one with elevation -->
+    <Placemark>
+      <name>WithElev</name>
+      <Point>
+        <coordinates>-122.001,37.001,50</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>

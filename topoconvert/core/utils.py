@@ -167,10 +167,11 @@ def calculate_bounds(points: list) -> tuple:
     Returns:
         Tuple of (min_x, min_y, max_x, max_y)
     """
-    if not points:
-        raise ValueError("No points provided")
-    
+    # Convert to numpy array if not already
     points_array = np.array(points)
+    
+    if points_array.size == 0:
+        raise ValueError("No points provided")
     min_x = np.min(points_array[:, 0])
     max_x = np.max(points_array[:, 0])
     min_y = np.min(points_array[:, 1])

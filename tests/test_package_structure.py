@@ -43,7 +43,8 @@ def test_command_modules_exist():
         'csv_to_kml.py',
         'kml_to_points.py',
         'kml_to_mesh.py',
-        'combined_dxf.py',
+        'multi_csv_to_dxf.py',
+        'multi_csv_to_kml.py',
         'kml_to_csv.py',
         'slope_heatmap.py',
         'kml_contours_to_dxf.py',
@@ -61,8 +62,6 @@ def test_util_modules_exist():
     utils_dir = package_dir / 'utils'
     
     expected_utils = [
-        'file_io.py',
-        'geometry.py',
         'projection.py',
     ]
     

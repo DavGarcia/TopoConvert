@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Steep Slope Test</name>
+    <description>Points with extreme elevation change for slope testing</description>
+    
+    <!-- Base elevation points -->
+    <Placemark>
+      <name>Base 1</name>
+      <Point><coordinates>-122.0000,37.0000,100</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Base 2</name>
+      <Point><coordinates>-122.0001,37.0000,100</coordinates></Point>
+    </Placemark>
+    
+    <!-- Steep rise -->
+    <Placemark>
+      <name>Peak 1</name>
+      <Point><coordinates>-122.0000,37.0001,200</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Peak 2</name>
+      <Point><coordinates>-122.0001,37.0001,250</coordinates></Point>
+    </Placemark>
+    
+    <!-- Additional points for stability -->
+    <Placemark>
+      <name>Mid 1</name>
+      <Point><coordinates>-122.0002,37.0000,150</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Mid 2</name>
+      <Point><coordinates>-122.0002,37.0001,175</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

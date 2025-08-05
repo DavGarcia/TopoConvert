@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Invalid Coordinates Test</name>
+    <description>Points with invalid coordinate values</description>
+    
+    <!-- Valid point -->
+    <Placemark>
+      <name>Valid</name>
+      <Point>
+        <coordinates>-122.0,37.0,100</coordinates>
+      </Point>
+    </Placemark>
+    
+    <!-- Invalid: non-numeric -->
+    <Placemark>
+      <name>Invalid 1</name>
+      <Point>
+        <coordinates>abc,def,100</coordinates>
+      </Point>
+    </Placemark>
+    
+    <!-- Invalid: missing values -->
+    <Placemark>
+      <name>Invalid 2</name>
+      <Point>
+        <coordinates>-122.0</coordinates>
+      </Point>
+    </Placemark>
+    
+    <!-- Valid point to ensure we have enough -->
+    <Placemark>
+      <name>Valid 2</name>
+      <Point>
+        <coordinates>-122.001,37.001,110</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>

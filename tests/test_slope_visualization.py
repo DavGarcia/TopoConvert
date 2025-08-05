@@ -207,20 +207,25 @@ class TestRenderSlopeHeatmap:
 class TestVisualizationRobustness:
     """Test cases for visualization robustness improvements."""
     
-    @pytest.mark.skipif(True, reason="Robustness features not yet implemented")
-    def test_interpolation_fallback_chain(self):
-        """Test that interpolation falls back from cubic to linear to nearest."""
-        # This will test the fallback mechanism once implemented
-        pass
-    
-    @pytest.mark.skipif(True, reason="Robustness features not yet implemented")
-    def test_binary_closing_for_holes(self):
-        """Test that binary closing fills small holes in mask."""
-        # This will test hole-filling once implemented
-        pass
-    
-    @pytest.mark.skipif(True, reason="Robustness features not yet implemented")
     def test_sparse_data_warning(self):
         """Test that sparse data triggers appropriate warnings."""
-        # This will test data density validation once implemented
-        pass
+        from topoconvert.core.slope_heatmap import compute_slope_from_points
+        import warnings
+        
+        # Create very sparse data
+        points = [
+            (-122.0, 37.0, 100.0),
+            (-122.01, 37.0, 110.0),  # Far apart
+            (-122.0, 37.01, 120.0),
+        ]
+        
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = compute_slope_from_points(
+                points=points,
+                grid_resolution=100  # High resolution for sparse data
+            )
+            
+            # Should have warned about sparse data
+            assert len(w) > 0
+            assert any("Sparse data detected" in str(warning.message) for warning in w)

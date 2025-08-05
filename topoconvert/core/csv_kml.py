@@ -167,14 +167,19 @@ def _process_csv_to_kml(
     except Exception as e:
         raise FileFormatError(f"Error reading CSV file: {e}")
     
-    # Validate required columns
-    required_cols = [x_column, y_column, z_column]
+    # Validate required columns (x and y are required, z is optional)
+    required_cols = [x_column, y_column]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise FileFormatError(
             f"Missing required columns: {missing_cols}. "
             f"Found columns: {list(df.columns)}"
         )
+    
+    # Check if elevation column exists
+    has_elevation = z_column in df.columns
+    if not has_elevation:
+        click.echo(f"Warning: Elevation column '{z_column}' not found. Using 0 for all elevations.")
     
     if len(df) == 0:
         raise ProcessingError("CSV file is empty")
@@ -211,7 +216,7 @@ def _process_csv_to_kml(
             for idx, row in df.iterrows():
                 lat = row[y_column]
                 lon = row[x_column]
-                elev = row[z_column]
+                elev = row[z_column] if has_elevation else 0.0
                 
                 # Validate coordinates
                 if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
@@ -248,11 +253,15 @@ def _process_csv_to_kml(
     # Print coordinate bounds
     lat_range = (df[y_column].min(), df[y_column].max())
     lon_range = (df[x_column].min(), df[x_column].max())
-    elev_range = (df[z_column].min(), df[z_column].max())
     
     click.echo(f"- Latitude range: {lat_range[0]:.6f} to {lat_range[1]:.6f}")
     click.echo(f"- Longitude range: {lon_range[0]:.6f} to {lon_range[1]:.6f}")
-    click.echo(f"- Elevation range: {elev_range[0]:.2f} to {elev_range[1]:.2f} {elevation_units}")
+    
+    if has_elevation:
+        elev_range = (df[z_column].min(), df[z_column].max())
+        click.echo(f"- Elevation range: {elev_range[0]:.2f} to {elev_range[1]:.2f} {elevation_units}")
+    else:
+        click.echo(f"- Elevation: 0.00 {elevation_units} (no elevation data)")
     
     if progress_callback:
         progress_callback("Complete", 100)

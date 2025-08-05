@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Simple 3 Points Test</name>
+    <description>Minimal test case with 3 elevation points</description>
+    
+    <Placemark>
+      <name>Point 1</name>
+      <description>Elevation: 100m</description>
+      <Point>
+        <coordinates>-122.0,37.0,100</coordinates>
+      </Point>
+    </Placemark>
+    
+    <Placemark>
+      <name>Point 2</name>
+      <description>Elevation: 110m</description>
+      <Point>
+        <coordinates>-122.001,37.0,110</coordinates>
+      </Point>
+    </Placemark>
+    
+    <Placemark>
+      <name>Point 3</name>
+      <description>Elevation: 120m</description>
+      <Point>
+        <coordinates>-122.0,37.001,120</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>

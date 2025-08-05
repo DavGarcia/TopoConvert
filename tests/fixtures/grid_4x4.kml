@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>4x4 Grid Test</name>
+    <description>16 points in a regular grid with varying elevation</description>
+    
+    <!-- Row 1 -->
+    <Placemark>
+      <name>G1-1</name>
+      <Point><coordinates>-122.000,37.000,100.0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G1-2</name>
+      <Point><coordinates>-122.001,37.000,102.5</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G1-3</name>
+      <Point><coordinates>-122.002,37.000,105.0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G1-4</name>
+      <Point><coordinates>-122.003,37.000,107.5</coordinates></Point>
+    </Placemark>
+    
+    <!-- Row 2 -->
+    <Placemark>
+      <name>G2-1</name>
+      <Point><coordinates>-122.000,37.001,102.5</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G2-2</name>
+      <Point><coordinates>-122.001,37.001,105.0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G2-3</name>
+      <Point><coordinates>-122.002,37.001,107.5</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G2-4</name>
+      <Point><coordinates>-122.003,37.001,110.0</coordinates></Point>
+    </Placemark>
+    
+    <!-- Row 3 -->
+    <Placemark>
+      <name>G3-1</name>
+      <Point><coordinates>-122.000,37.002,105.0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G3-2</name>
+      <Point><coordinates>-122.001,37.002,107.5</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G3-3</name>
+      <Point><coordinates>-122.002,37.002,110.0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G3-4</name>
+      <Point><coordinates>-122.003,37.002,112.5</coordinates></Point>
+    </Placemark>
+    
+    <!-- Row 4 -->
+    <Placemark>
+      <name>G4-1</name>
+      <Point><coordinates>-122.000,37.003,107.5</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G4-2</name>
+      <Point><coordinates>-122.001,37.003,110.0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G4-3</name>
+      <Point><coordinates>-122.002,37.003,112.5</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>G4-4</name>
+      <Point><coordinates>-122.003,37.003,115.0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>
