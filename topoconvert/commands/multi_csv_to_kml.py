@@ -40,7 +40,7 @@ def register(cli):
             csv_paths = [Path(f) for f in csv_files]
             
             # Merge CSV files to KML
-            merge_csv_to_kml(
+            result = merge_csv_to_kml(
                 csv_files=csv_paths,
                 output_file=Path(output),
                 elevation_units=elevation_units,
@@ -51,6 +51,20 @@ def register(cli):
                 z_column=z_column,
                 progress_callback=None
             )
+            
+            # Display results
+            click.echo(f"\nCreated combined KML: {result.output_file}")
+            click.echo(f"- {result.input_file_count} input files in separate folders")
+            click.echo(f"- {result.total_points} total points")
+            click.echo(f"- Each dataset has unique icon and color")
+            
+            if result.elevations_converted:
+                click.echo("- Elevations converted from feet to meters")
+            
+            # Show dataset details
+            if 'datasets' in result.details:
+                for name, count in result.details['datasets']:
+                    click.echo(f"Processed {name}: {count} points")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

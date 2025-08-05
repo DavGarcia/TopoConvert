@@ -1,5 +1,4 @@
 """Merge multiple CSV files into a single KML with folders."""
-import click
 import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Callable
@@ -8,6 +7,7 @@ from xml.dom import minidom
 
 from topoconvert.core.exceptions import ProcessingError, TopoConvertError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
+from topoconvert.core.result_types import CombinedKMLResult
 
 
 # Color palette for different datasets (AABBGGRR format)
@@ -49,7 +49,7 @@ def merge_csv_to_kml(
     y_column: str = 'Latitude', 
     z_column: str = 'Elevation',
     progress_callback: Optional[Callable] = None
-) -> None:
+) -> CombinedKMLResult:
     """
     Merge multiple CSV files into a single KML with separate folders.
     
@@ -113,6 +113,8 @@ def merge_csv_to_kml(
     
     # Process each CSV file
     total_points = 0
+    file_details = []
+    elevations_converted = elevation_units == 'feet'
     
     for idx, csv_file in enumerate(csv_files):
         if progress_callback:
@@ -183,7 +185,7 @@ def merge_csv_to_kml(
                 coords.text = f"{row[x_column]},{row[y_column]},{elevation}"
             
             total_points += len(df)
-            click.echo(f"Processed {csv_file.stem}: {len(df)} points")
+            file_details.append((csv_file.stem, len(df)))
             
         except Exception as e:
             raise ProcessingError(f"Error processing {csv_file.name}: {e}")
@@ -207,10 +209,24 @@ def merge_csv_to_kml(
     except Exception as e:
         raise ProcessingError(f"Failed to write KML file: {e}")
     
-    # Summary
-    click.echo(f"\nCreated combined KML: {output_file}")
-    click.echo(f"- {len(csv_files)} input files in separate folders")
-    click.echo(f"- {total_points} total points")
-    click.echo(f"- Each dataset has unique icon and color")
-    if elevation_units == 'feet':
-        click.echo(f"- Elevations converted from feet to meters")
+    if progress_callback:
+        progress_callback("Complete", 100)
+    
+    # Return structured result
+    return CombinedKMLResult(
+        success=True,
+        output_file=str(output_file),
+        input_file_count=len(csv_files),
+        total_points=total_points,
+        elevations_converted=elevations_converted,
+        details={
+            "datasets": file_details,
+            "point_scale": point_scale,
+            "labels_added": add_labels,
+            "column_names": {
+                "x": x_column,
+                "y": y_column,
+                "z": z_column
+            }
+        }
+    )

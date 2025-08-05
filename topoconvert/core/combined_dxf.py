@@ -5,7 +5,6 @@ Adapted from GPSGrid combined_dxf.py
 from pathlib import Path
 from typing import List, Optional, Callable
 
-import click
 import ezdxf
 import pandas as pd
 from pyproj import Transformer
@@ -13,6 +12,7 @@ from pyproj import Transformer
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.utils.projection import get_target_crs, get_transformer
+from topoconvert.core.result_types import CombinedDXFResult
 
 
 M_TO_FT = 3.28084
@@ -24,7 +24,7 @@ def merge_csv_to_dxf(
     target_epsg: Optional[int] = None,
     wgs84: bool = False,
     progress_callback: Optional[Callable] = None
-) -> None:
+) -> CombinedDXFResult:
     """Merge multiple CSV files into a single DXF with 3D points.
     
     Each CSV file is expected to have Latitude, Longitude, and Elevation columns.
@@ -53,7 +53,7 @@ def merge_csv_to_dxf(
         raise ValueError("At least one CSV file is required")
     
     try:
-        _process_csv_merge(
+        return _process_csv_merge(
             csv_files=validated_files,
             output_file=output_file,
             target_epsg=target_epsg,
@@ -122,7 +122,7 @@ def _process_csv_merge(
     target_epsg: Optional[int],
     wgs84: bool,
     progress_callback: Optional[Callable]
-) -> None:
+) -> CombinedDXFResult:
     """Process CSV merge - internal implementation."""
     
     # Initialize progress
@@ -160,10 +160,11 @@ def _process_csv_merge(
         all_z.extend(df["Z_ft"])
         
         basename = csv_file.stem
-        datasets.append((basename, df))
+        # Line moved above
         
         elevation_msg = " (with elevation)" if has_elevation else " (elevation set to 0.0)"
-        click.echo(f"Processed {csv_file.name}: {len(df)} points{elevation_msg}")
+        # Store for result reporting
+        datasets.append((basename, df, elevation_msg))
     
     if progress_callback:
         progress_callback("Computing coordinate bounds", 60)
@@ -195,7 +196,8 @@ def _process_csv_merge(
     
     # For each CSV, create a new layer, shift coords, add points
     total_points = 0
-    for i, (basename, df) in enumerate(datasets):
+    layers_created = []
+    for i, (basename, df, _) in enumerate(datasets):
         if progress_callback:
             progress_callback(f"Adding layer {basename}", int(70 + (i / len(datasets)) * 25))
         
@@ -215,7 +217,7 @@ def _process_csv_merge(
             msp.add_point((x, y, z), dxfattribs={"layer": layer_name})
         
         total_points += len(df)
-        click.echo(f"Added layer {layer_name}: {len(df)} points (color {color_idx})")
+        layers_created.append(layer_name)
     
     if progress_callback:
         progress_callback("Saving DXF file", 95)
@@ -223,35 +225,53 @@ def _process_csv_merge(
     # Save the combined file
     doc.saveas(str(output_file))
     
-    # Print summary
-    click.echo(f"\nCreated merged DXF: {output_file}")
-    click.echo(f"- {len(datasets)} input files")
-    click.echo(f"- {total_points} total points")
+    # Build coordinate system description
     if wgs84:
-        click.echo(f"- Global reference point: ({global_min_x:.6f}, {global_min_y:.6f}, {global_min_z:.2f})")
-    else:
-        click.echo(f"- Global reference point: ({global_min_x:.2f}, {global_min_y:.2f}, {global_min_z:.2f} ft)")
-    # Output coordinate system info
-    if wgs84:
-        click.echo("- Coordinates in degrees (WGS84)")
+        coord_system = "WGS84 (degrees)"
     elif target_epsg:
-        click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
+        coord_system = f"EPSG:{target_epsg} (feet)"
     else:
-        click.echo("- Coordinates in feet (auto-detected UTM zone)")
+        coord_system = "Auto-detected UTM zone (feet)"
     
-    # Print coordinate ranges after translation
+    # Build result details
+    details = {
+        "datasets": [(basename, len(df), msg) for basename, df, msg in datasets],
+        "coordinate_ranges": {}
+    }
+    
+    # Add coordinate ranges if available
     if all_x and all_y and all_z:
         x_range = max(all_x) - global_min_x
         y_range = max(all_y) - global_min_y
         z_range = max(all_z) - global_min_z
+        
         if wgs84:
-            click.echo(f"- X range: 0.0 to {x_range:.6f} degrees")
-            click.echo(f"- Y range: 0.0 to {y_range:.6f} degrees")
-            click.echo(f"- Z range: 0.0 to {z_range:.1f} m")  # CSV elevations are always in meters
+            details["coordinate_ranges"] = {
+                "x": (0.0, x_range),
+                "y": (0.0, y_range),
+                "z": (0.0, z_range),
+                "units": {"x": "degrees", "y": "degrees", "z": "meters"}
+            }
         else:
-            click.echo(f"- X range: 0.0 to {x_range:.1f} ft")
-            click.echo(f"- Y range: 0.0 to {y_range:.1f} ft")
-            click.echo(f"- Z range: 0.0 to {z_range:.1f} ft")
+            details["coordinate_ranges"] = {
+                "x": (0.0, x_range),
+                "y": (0.0, y_range), 
+                "z": (0.0, z_range),
+                "units": {"x": "feet", "y": "feet", "z": "feet"}
+            }
     
     if progress_callback:
         progress_callback("Complete", 100)
+    
+    # Return structured result
+    return CombinedDXFResult(
+        success=True,
+        output_file=str(output_file),
+        input_file_count=len(datasets),
+        total_points=total_points,
+        layers_created=layers_created,
+        coordinate_system=coord_system,
+        reference_point=(global_min_x, global_min_y, global_min_z),
+        translated_to_origin=True,
+        details=details
+    )
