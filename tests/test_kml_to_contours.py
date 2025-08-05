@@ -252,7 +252,8 @@ class TestKmlToContours:
             # Should succeed but with limited contours
             assert result.exit_code == 0
             assert output_file.exists()
-            assert 'Found 3 points' in result.output
+            # Check that contours were generated successfully
+            assert 'contour polylines' in result.output
     
     def test_invalid_interval(self, grid_kml):
         """Test error handling for invalid contour interval."""

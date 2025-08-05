@@ -7,12 +7,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import click
 import ezdxf
 from ezdxf.enums import TextEntityAlignment
 from pyproj import Transformer
 
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
+from topoconvert.core.result_types import KMLContoursResult
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.utils.projection import get_target_crs, get_transformer
 
@@ -36,7 +36,7 @@ def convert_kml_contours_to_dxf(
     target_epsg_feet: bool = False,
     label_height: float = 6.0,
     wgs84: bool = False
-) -> None:
+) -> KMLContoursResult:
     """Convert KML contour LineStrings to DXF format.
     
     Args:
@@ -73,7 +73,7 @@ def convert_kml_contours_to_dxf(
         raise ValueError("z_units must be 'meters' or 'feet'")
     
     try:
-        _process_kml_contours_conversion(
+        return _process_kml_contours_conversion(
             input_file=input_file,
             output_file=output_file,
             z_source=z_source,
@@ -238,7 +238,7 @@ def _process_kml_contours_conversion(
     target_epsg_feet: bool,
     label_height: float = 6.0,
     wgs84: bool = False
-) -> None:
+) -> KMLContoursResult:
     """Process KML contours conversion - internal implementation."""
     
     try:
@@ -366,23 +366,36 @@ def _process_kml_contours_conversion(
     
     doc.saveas(str(output_file))
     
-    # Print summary
-    click.echo(f"\\nCreated contours DXF: {output_file}")
-    click.echo(f"- {count} contour polylines")
-    click.echo(f"- Missing elevation placemarks skipped: {missing_z}")
-    
+    # Determine coordinate system and units
     if wgs84:
-        click.echo("- No projection applied (XY: lon/lat degrees, Z: feet)")
+        coord_system = "lon/lat degrees (WGS84)"
+        xy_units = "degrees"
     elif target_epsg:
-        units_str = "feet" if target_epsg_feet else "target CRS units"
-        click.echo(f"- Projected to EPSG:{target_epsg}")
-        click.echo(f"- XY units: {units_str}, Z units: feet")
+        coord_system = f"EPSG:{target_epsg}"
+        xy_units = "feet" if target_epsg_feet else "target CRS units"
     else:
-        click.echo("- Projected to auto-detected UTM zone")
-        click.echo("- XY units: feet, Z units: feet")
+        coord_system = "auto-detected UTM zone"
+        xy_units = "feet"
     
-    if translate_to_origin and all_points:
-        if wgs84:
-            click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f})")
-        else:
-            click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f})")
+    # Return result
+    return KMLContoursResult(
+        success=True,
+        output_file=str(output_file),
+        contour_count=count,
+        missing_elevations=missing_z,
+        coordinate_system=coord_system,
+        xy_units=xy_units,
+        z_units="feet",
+        reference_point=(ref_x, ref_y) if translate_to_origin and all_points else None,
+        translated_to_origin=translate_to_origin and all_points,
+        details={
+            "z_source": z_source,
+            "z_units_input": z_units,
+            "add_labels": add_labels,
+            "layer_prefix": layer_prefix,
+            "decimals": decimals,
+            "z_field": z_field,
+            "target_epsg": target_epsg,
+            "wgs84": wgs84
+        }
+    )

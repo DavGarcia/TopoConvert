@@ -44,7 +44,7 @@ def register(cli):
                 output_path = Path(output_file)
             
             # Generate contours
-            generate_contours(
+            result = generate_contours(
                 input_file=input_path,
                 output_file=output_path,
                 elevation_units=elevation_units,
@@ -56,6 +56,26 @@ def register(cli):
                 target_epsg=target_epsg,
                 wgs84=False  # Contour generation requires projected coordinates
             )
+            
+            # Display results
+            click.echo(f"\nCreated {result.output_file}")
+            click.echo(f"- {result.contour_count} contour polylines")
+            click.echo(f"- {result.elevation_levels} elevation levels")
+            
+            if result.translated_to_origin and result.reference_point:
+                ref_x, ref_y, ref_z = result.reference_point
+                click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+                if result.elevation_range:
+                    click.echo(f"- Original elevation range: {result.elevation_range[0]:.1f} to {result.elevation_range[1]:.1f} ft")
+            
+            # Output coordinate system info
+            click.echo(f"- Coordinates in {result.coordinate_system}")
+            
+            # Show contour details
+            if result.details:
+                start = result.details.get('contour_start', 0)
+                end = result.details.get('contour_end', 0)
+                click.echo(f"- Contours from {start:.1f} to {end:.1f} ft at {result.contour_interval} ft intervals")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

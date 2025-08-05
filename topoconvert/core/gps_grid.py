@@ -7,7 +7,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-import click
 import numpy as np
 import pandas as pd
 from shapely.geometry import Polygon, Point
@@ -15,6 +14,7 @@ from scipy.spatial import ConvexHull
 import alphashape
 
 from topoconvert.core.exceptions import ProcessingError, FileFormatError
+from topoconvert.core.result_types import GridGenerationResult
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -31,7 +31,7 @@ def generate_gps_grid(
     point_style: str = 'circle',
     point_color: str = 'ff00ff00',
     grid_name: str = 'GPS Grid'
-) -> None:
+) -> GridGenerationResult:
     """
     Generate GPS grid points within property boundaries.
     
@@ -66,7 +66,8 @@ def generate_gps_grid(
                     input_type = 'csv-boundary'
                 else:
                     input_type = 'csv-extent'
-            except:
+            except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError) as e:
+                # If CSV parsing fails, assume it's a boundary file
                 input_type = 'csv-boundary'
         else:
             raise FileFormatError(f"Cannot auto-detect input type for {input_file.suffix}")
@@ -96,13 +97,22 @@ def generate_gps_grid(
     _write_grid_kml(output_file, grid_points, boundary_coords, grid_name, 
                     point_style, point_color, spacing)
     
-    # Summary
-    click.echo(f"\nCreated GPS grid: {output_file}")
-    click.echo(f"- {len(grid_points)} grid points")
-    click.echo(f"- {spacing} ft spacing")
-    click.echo(f"- Boundary type: {input_type}")
-    if input_type == 'csv-extent' and buffer > 0:
-        click.echo(f"- Buffer: {buffer} ft")
+    # Return result
+    return GridGenerationResult(
+        success=True,
+        output_file=str(output_file),
+        grid_points=len(grid_points),
+        spacing=spacing,
+        boundary_type=input_type,
+        buffer=buffer if input_type == 'csv-extent' else None,
+        details={
+            "point_style": point_style,
+            "point_color": point_color,
+            "grid_name": grid_name,
+            "boundary_points": len(boundary_coords),
+            "alpha": alpha if boundary_type == 'concave' else None
+        }
+    )
 
 
 def _parse_coordinates_kml(coord_text: str) -> List[Tuple[float, float]]:

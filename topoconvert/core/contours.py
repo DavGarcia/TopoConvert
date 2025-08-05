@@ -7,7 +7,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-import click
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')  # For headless environments
@@ -22,6 +21,7 @@ from topoconvert.core.exceptions import (
 )
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.utils.projection import get_target_crs, get_transformer
+from topoconvert.core.result_types import ContourGenerationResult
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -39,7 +39,7 @@ def generate_contours(
     translate_to_origin: bool = True,
     target_epsg: Optional[int] = None,
     wgs84: bool = False
-) -> None:
+) -> ContourGenerationResult:
     """Generate contour lines from KML point data.
     
     Args:
@@ -78,7 +78,7 @@ def generate_contours(
         raise ValueError("label_height must be positive")
     
     try:
-        _process_contours(
+        return _process_contours(
             input_file=input_file,
             output_file=output_file,
             elevation_units=elevation_units,
@@ -165,7 +165,7 @@ def _process_contours(
     translate_to_origin: bool,
     target_epsg: Optional[int],
     wgs84: bool
-) -> None:
+) -> ContourGenerationResult:
     """Process contours - internal implementation."""
     
     # Extract points from KML
@@ -177,7 +177,7 @@ def _process_contours(
     if len(kml_points) < 2:
         raise ProcessingError(f"Need at least 2 points for contour generation, found {len(kml_points)}")
     
-    click.echo(f"Found {len(kml_points)} points in KML")
+    # Found {len(kml_points)} points in KML
     
     # Determine target CRS
     if kml_points:
@@ -252,7 +252,7 @@ def _process_contours(
     contour_end = math.ceil(z_max / contour_interval) * contour_interval
     contour_levels = np.arange(contour_start, contour_end + contour_interval, contour_interval)
     
-    click.echo(f"Generating contours from {contour_start:.1f} to {contour_end:.1f} ft at {contour_interval} ft intervals")
+    # Generating contours from {contour_start:.1f} to {contour_end:.1f} ft at {contour_interval} ft intervals
     
     # Create contours
     cs = plt.contour(Xg, Yg, Zg, levels=contour_levels, colors='black')
@@ -334,17 +334,44 @@ def _process_contours(
     # Save DXF
     doc.saveas(str(output_file))
     
-    click.echo(f"\nCreated {output_file}")
-    click.echo(f"- {contour_count} contour polylines")
-    click.echo(f"- {len(contour_levels)} elevation levels")
-    if translate_to_origin:
-        click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
-        click.echo(f"- Original elevation range: {ref_z:.1f} to {ref_z + max(z_local):.1f} ft")
-    
-    # Output coordinate system info
+    # Determine coordinate system string
     if wgs84:
-        click.echo("- Coordinates in degrees (WGS84)")
+        coord_system = "degrees (WGS84)"
     elif target_epsg:
-        click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
+        coord_system = f"feet (EPSG:{target_epsg})"
     else:
-        click.echo("- Coordinates in feet (auto-detected UTM zone)")
+        coord_system = "feet (auto-detected UTM zone)"
+    
+    # Build reference point if translated
+    reference_point = None
+    if translate_to_origin:
+        reference_point = (ref_x, ref_y, ref_z)
+    
+    # Calculate elevation range
+    if z_local:
+        elevation_range = (ref_z, ref_z + max(z_local))
+    else:
+        elevation_range = (ref_z, ref_z)
+    
+    # Return result
+    return ContourGenerationResult(
+        success=True,
+        output_file=str(output_file),
+        contour_count=contour_count,
+        elevation_levels=len(contour_levels),
+        contour_interval=contour_interval,
+        elevation_range=elevation_range,
+        coordinate_system=coord_system,
+        reference_point=reference_point,
+        translated_to_origin=translate_to_origin,
+        details={
+            "kml_points_found": len(kml_points),
+            "grid_resolution": grid_resolution,
+            "add_labels": add_labels,
+            "label_height": label_height,
+            "wgs84": wgs84,
+            "target_epsg": target_epsg,
+            "contour_start": contour_start,
+            "contour_end": contour_end
+        }
+    )

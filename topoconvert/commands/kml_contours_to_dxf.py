@@ -40,7 +40,7 @@ def register(cli):
                 raise click.ClickException("Cannot use both --target-epsg and --wgs84")
                 
             # Convert KML contours to DXF with sensible defaults
-            convert_kml_contours_to_dxf(
+            result = convert_kml_contours_to_dxf(
                 input_file=Path(input_file),
                 output_file=Path(output_file),
                 z_source='auto',  # Auto-detect elevation source
@@ -56,6 +56,24 @@ def register(cli):
                 label_height=label_height,
                 wgs84=wgs84
             )
+            
+            # Display results
+            click.echo(f"\nCreated contours DXF: {result.output_file}")
+            click.echo(f"- {result.contour_count} contour polylines")
+            click.echo(f"- Missing elevation placemarks skipped: {result.missing_elevations}")
+            
+            if wgs84:
+                click.echo("- No projection applied (XY: lon/lat degrees, Z: feet)")
+            else:
+                click.echo(f"- Coordinates in {result.coordinate_system}")
+                click.echo(f"- XY units: {result.xy_units}, Z units: {result.z_units}")
+            
+            if result.translated_to_origin and result.reference_point:
+                ref_x, ref_y = result.reference_point
+                if wgs84:
+                    click.echo(f"- Translated to origin (reference: {ref_x:.6f}, {ref_y:.6f})")
+                else:
+                    click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f})")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

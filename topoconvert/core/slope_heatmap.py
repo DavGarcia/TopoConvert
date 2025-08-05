@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 
 import warnings
-import click
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -19,6 +18,7 @@ from scipy.interpolate import griddata
 from scipy.ndimage import gaussian_filter, binary_closing
 
 from topoconvert.core.exceptions import ProcessingError, FileFormatError
+from topoconvert.core.result_types import SlopeHeatmapResult
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -385,7 +385,7 @@ def generate_slope_heatmap(
     figsize: Optional[List[float]] = None,
     target_slope: Optional[float] = None,
     stats_position: str = 'outside'
-) -> None:
+) -> SlopeHeatmapResult:
     """
     Generate a slope heatmap from KML point data.
     
@@ -419,7 +419,7 @@ def generate_slope_heatmap(
     if not points:
         raise ProcessingError("No points found in KML file")
     
-    click.echo(f"Found {len(points)} points in KML")
+    # Found {len(points)} points in KML
     
     # Compute slope data using pure computation function
     slope_data = compute_slope_from_points(
@@ -448,13 +448,27 @@ def generate_slope_heatmap(
         run_length=run_length
     )
     
-    # Summary
-    click.echo(f"\nCreated slope heatmap: {output_file}")
-    click.echo(f"- Grid resolution: {grid_resolution}x{grid_resolution}")
-    click.echo(f"- Slope units: {slope_units}")
-    if smooth > 0:
-        click.echo(f"- Smoothing applied: sigma={smooth}")
-    click.echo(f"- Output resolution: {dpi} DPI")
+    # Return result
+    return SlopeHeatmapResult(
+        success=True,
+        output_file=str(output_file),
+        grid_resolution=(grid_resolution, grid_resolution),
+        slope_units=slope_units,
+        smoothing_applied=smooth if smooth > 0 else None,
+        output_dpi=dpi,
+        point_count=len(points),
+        details={
+            "elevation_units": elevation_units,
+            "run_length": run_length,
+            "max_slope": max_slope,
+            "colormap": colormap,
+            "show_contours": show_contours,
+            "contour_interval": contour_interval,
+            "figsize": figsize,
+            "target_slope": target_slope,
+            "stats_position": stats_position
+        }
+    )
 
 
 def _parse_coordinates(coord_text: str) -> Optional[Tuple[float, float, float]]:

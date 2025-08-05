@@ -37,7 +37,7 @@ def register(cli):
         """
         try:
             # Generate GPS grid
-            generate_gps_grid(
+            result = generate_gps_grid(
                 input_file=Path(input_file),
                 output_file=Path(output_file),
                 input_type=input_type,
@@ -47,6 +47,14 @@ def register(cli):
                 point_style=point_style,
                 grid_name=grid_name
             )
+            
+            # Display results
+            click.echo(f"\nCreated GPS grid: {result.output_file}")
+            click.echo(f"- {result.grid_points} grid points")
+            click.echo(f"- {result.spacing} ft spacing")
+            click.echo(f"- Boundary type: {result.boundary_type}")
+            if result.buffer is not None and result.buffer > 0:
+                click.echo(f"- Buffer: {result.buffer} ft")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)

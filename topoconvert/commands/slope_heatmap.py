@@ -55,7 +55,7 @@ def register(cli):
                 output_path = Path(output_file)
             
             # Generate slope heatmap
-            generate_slope_heatmap(
+            result = generate_slope_heatmap(
                 input_file=input_path,
                 output_file=output_path,
                 elevation_units=elevation_units,
@@ -70,6 +70,14 @@ def register(cli):
                 contour_interval=contour_interval,
                 target_slope=target_slope
             )
+            
+            # Display results
+            click.echo(f"\nCreated slope heatmap: {result.output_file}")
+            click.echo(f"- Grid resolution: {result.grid_resolution[0]}x{result.grid_resolution[1]}")
+            click.echo(f"- Slope units: {result.slope_units}")
+            if result.smoothing_applied is not None:
+                click.echo(f"- Smoothing applied: sigma={result.smoothing_applied}")
+            click.echo(f"- Output resolution: {result.output_dpi} DPI")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)
