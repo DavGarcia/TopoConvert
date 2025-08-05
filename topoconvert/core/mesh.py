@@ -6,7 +6,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Tuple, Optional, Callable
 
-import click
 import ezdxf
 import numpy as np
 from pyproj import Transformer
@@ -15,6 +14,7 @@ from scipy.spatial import Delaunay
 from topoconvert.core.exceptions import FileFormatError, ProcessingError
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.utils.projection import get_target_crs, get_transformer
+from topoconvert.core.result_types import MeshGenerationResult
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -35,7 +35,7 @@ def generate_mesh(
     target_epsg: Optional[int] = None,
     wgs84: bool = False,
     progress_callback: Optional[Callable] = None
-) -> None:
+) -> MeshGenerationResult:
     """Generate 3D TIN mesh from KML point data.
     
     Args:
@@ -70,7 +70,7 @@ def generate_mesh(
         raise ValueError("Color indices must be non-negative")
     
     try:
-        _process_mesh_generation(
+        return _process_mesh_generation(
             input_file=input_file,
             output_file=output_file,
             elevation_units=elevation_units,
@@ -143,7 +143,8 @@ def _create_mesh_dxf(points_3d: List[Tuple[float, float, float]],
     except Exception as e:
         raise ProcessingError(f"Error creating triangulation: {e}")
     
-    click.echo(f"Created triangulation with {len(tri.simplices)} triangles")
+    # Store for result reporting
+    triangle_count = len(tri.simplices)
     
     if progress_callback:
         progress_callback("Writing DXF file", 80)
@@ -233,7 +234,7 @@ def _process_mesh_generation(
     target_epsg: Optional[int],
     wgs84: bool,
     progress_callback: Optional[Callable]
-) -> None:
+) -> MeshGenerationResult:
     """Process mesh generation - internal implementation."""
     
     # Initialize progress
@@ -249,7 +250,8 @@ def _process_mesh_generation(
     if len(kml_points) < 3:
         raise ProcessingError(f"Need at least 3 points for triangulation, found {len(kml_points)}")
     
-    click.echo(f"Found {len(kml_points)} points in KML")
+    # Store for result reporting
+    point_count = len(kml_points)
     
     if progress_callback:
         progress_callback("Projecting coordinates", 20)
@@ -330,37 +332,50 @@ def _process_mesh_generation(
         add_wireframe, wireframe_color, progress_callback
     )
     
-    # Print summary
-    click.echo(f"\nCreated 3D TIN mesh DXF: {output_file}")
-    click.echo(f"- {face_count} triangular faces")
-    click.echo(f"- {len(points_3d)} vertices")
-    click.echo(f"- Layer: {layer_name}")
-    
-    if add_wireframe:
-        wireframe_layer = f"{layer_name}_WIREFRAME"
-        click.echo(f"- {edge_count} wireframe edges")
-        click.echo(f"- Wireframe layer: {wireframe_layer}")
-    
-    if translate_to_origin:
-        if use_reference_point:
-            click.echo(f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
-            click.echo(f"- First point translated to origin")
-        else:
-            click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
-    
-    # Output coordinate system info
+    # Build coordinate system description
     if wgs84:
-        click.echo("- Coordinates in degrees (WGS84)")
+        coord_system = "WGS84 (degrees)"
     elif target_epsg:
-        click.echo(f"- Coordinates in feet (EPSG:{target_epsg})")
+        coord_system = f"EPSG:{target_epsg} (feet)"
     else:
-        click.echo("- Coordinates in feet (auto-detected UTM zone)")
+        coord_system = "Auto-detected UTM zone (feet)"
     
-    # Print coordinate ranges
+    # Build result details
+    details = {
+        "coordinate_ranges": {},
+        "wireframe_layer": f"{layer_name}_WIREFRAME" if add_wireframe else None,
+        "mesh_color": mesh_color,
+        "wireframe_color": wireframe_color if add_wireframe else None,
+        "triangulation_info": {
+            "points_found": point_count,
+            "triangles_created": triangle_count if 'triangle_count' in locals() else face_count
+        }
+    }
+    
+    # Add coordinate ranges if available
     if x_local and y_local and z_local:
-        click.echo(f"- X range: {min(x_local):.1f} to {max(x_local):.1f} ft")
-        click.echo(f"- Y range: {min(y_local):.1f} to {max(y_local):.1f} ft")
-        click.echo(f"- Z range: {min(z_local):.1f} to {max(z_local):.1f} ft")
+        details["coordinate_ranges"] = {
+            "x": (min(x_local), max(x_local)),
+            "y": (min(y_local), max(y_local)),
+            "z": (min(z_local), max(z_local)),
+            "units": "feet" if not wgs84 else "degrees"
+        }
     
     if progress_callback:
         progress_callback("Complete", 100)
+    
+    # Return structured result
+    return MeshGenerationResult(
+        success=True,
+        output_file=str(output_file),
+        face_count=face_count,
+        vertex_count=len(points_3d),
+        edge_count=edge_count,
+        mesh_type="TIN",
+        has_wireframe=add_wireframe,
+        layer_name=layer_name,
+        coordinate_system=coord_system,
+        reference_point=(ref_x, ref_y, ref_z) if translate_to_origin else None,
+        translated_to_origin=translate_to_origin,
+        details=details
+    )

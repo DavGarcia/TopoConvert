@@ -50,7 +50,7 @@ def register(cli):
                 output_path = Path(output_file)
             
             # Generate mesh
-            generate_mesh(
+            result = generate_mesh(
                 input_file=input_path,
                 output_file=output_path,
                 elevation_units=elevation_units,
@@ -64,6 +64,36 @@ def register(cli):
                 wgs84=False,  # Mesh generation requires projected coordinates
                 progress_callback=None
             )
+            
+            # Display results
+            click.echo(f"\nCreated 3D TIN mesh DXF: {result.output_file}")
+            click.echo(f"- {result.face_count} triangular faces")
+            click.echo(f"- {result.vertex_count} vertices")
+            click.echo(f"- Layer: {result.layer_name}")
+            
+            if result.has_wireframe:
+                wireframe_layer = result.details.get('wireframe_layer', f"{result.layer_name}_WIREFRAME")
+                click.echo(f"- {result.edge_count} wireframe edges")
+                click.echo(f"- Wireframe layer: {wireframe_layer}")
+            
+            if result.translated_to_origin and result.reference_point:
+                ref_x, ref_y, ref_z = result.reference_point
+                if use_reference_point:
+                    click.echo(f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+                    click.echo(f"- First point translated to origin")
+                else:
+                    click.echo(f"- Translated to origin (reference: {ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)")
+            
+            # Output coordinate system info
+            click.echo(f"- Coordinates in {result.coordinate_system}")
+            
+            # Print coordinate ranges
+            if 'coordinate_ranges' in result.details and result.details['coordinate_ranges']:
+                ranges = result.details['coordinate_ranges']
+                units = ranges.get('units', 'ft')
+                click.echo(f"- X range: {ranges['x'][0]:.1f} to {ranges['x'][1]:.1f} {units}")
+                click.echo(f"- Y range: {ranges['y'][0]:.1f} to {ranges['y'][1]:.1f} {units}")
+                click.echo(f"- Z range: {ranges['z'][0]:.1f} to {ranges['z'][1]:.1f} {units}")
                 
         except TopoConvertError as e:
             click.echo(f"Error: {e}", err=True)
