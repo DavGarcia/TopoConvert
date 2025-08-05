@@ -13,26 +13,31 @@ TopoConvert provides a comprehensive set of command-line tools for converting an
 - **Mesh Generation**: Generate Delaunay or concave hull triangulated meshes
 - **Slope Analysis**: Create detailed slope heatmaps and analysis reports
 - **GPS Grid Generation**: Generate field survey grids with custom spacing
-- **Batch Processing**: Combine multiple DXF files efficiently
-- **Coordinate System Support**: Handle various projections via pyproj
+- **Batch Processing**: Combine multiple files efficiently
+- **Smart Projection System**: Automatic UTM detection with manual override options
+- **Flexible Coordinate Handling**: Support for both geographic and projected coordinates
 
 ## Quick Links
 
 - [Installation Guide](installation.md) - Get TopoConvert up and running
 - [CLI Reference](cli_reference.md) - Detailed command documentation
+- [Projection Guide](projection_guide.md) - Understanding coordinate systems and projections
 - [Developer Guide](developer_guide.md) - Contributing and extending TopoConvert
 
 ## Example Usage
 
 ```bash
-# Convert KML points to DXF contours
-topoconvert kml-to-contours survey_points.kml contours.dxf --interval 0.5
+# Convert KML points to DXF contours with automatic UTM projection
+topoconvert kml-to-dxf-contours survey_points.kml contours.dxf --interval 0.5
 
-# Generate slope analysis
+# Generate slope analysis with specific projection
 topoconvert slope-heatmap terrain.kml slope_map.png --slope-units degrees
 
-# Combine multiple DXF files
-topoconvert combined-dxf file1.dxf file2.dxf --output merged.dxf
+# Extract points keeping geographic coordinates
+topoconvert kml-to-points locations.kml waypoints.csv --wgs84
+
+# Combine multiple CSV files into DXF with custom projection
+topoconvert multi-csv-to-dxf *.csv --output merged.dxf --target-epsg 27700
 ```
 
 ## Getting Help
