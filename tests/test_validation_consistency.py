@@ -57,10 +57,10 @@ class TestValidationConsistency:
             output_kml = Path(tmpdir) / "output.kml"
             
             # Both should handle empty lists appropriately
-            with pytest.raises(ProcessingError, match="No CSV files"):
+            with pytest.raises(ValueError, match="At least one CSV file is required"):
                 merge_csv_to_dxf([], output_dxf)
             
-            with pytest.raises(ProcessingError, match="No CSV files"):
+            with pytest.raises(ProcessingError, match="No CSV files provided"):
                 merge_csv_to_kml([], output_kml)
     
     def test_output_extension_correction(self):

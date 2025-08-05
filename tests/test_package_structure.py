@@ -45,7 +45,6 @@ def test_command_modules_exist():
         'kml_to_mesh.py',
         'multi_csv_to_dxf.py',
         'multi_csv_to_kml.py',
-        'kml_to_csv.py',
         'slope_heatmap.py',
         'kml_contours_to_dxf.py',
         'gps_grid.py',

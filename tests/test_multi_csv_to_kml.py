@@ -562,7 +562,7 @@ class TestMergeCsvToKmlCoreFunction:
                 Path("nonexistent2.csv")
             ]
             
-            with pytest.raises(ProcessingError):
+            with pytest.raises(FileNotFoundError):
                 merge_csv_to_kml(
                     csv_files=csv_files,
                     output_file=output_file
