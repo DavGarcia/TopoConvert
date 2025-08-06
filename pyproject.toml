@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "topoconvert"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Python CLI tool for converting geospatial survey data between KML, CSV, and DXF formats with specialized topographical operations"
 readme = "README.md"
 license = {text = "MIT"}
