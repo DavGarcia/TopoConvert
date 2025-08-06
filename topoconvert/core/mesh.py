@@ -326,7 +326,7 @@ def _process_mesh_generation(
         "wireframe_color": wireframe_color if add_wireframe else None,
         "triangulation_info": {
             "points_found": point_count,
-            "triangles_created": triangle_count if 'triangle_count' in locals() else face_count
+            "triangles_created": face_count
         }
     }
     
