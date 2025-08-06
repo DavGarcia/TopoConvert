@@ -5,20 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "topoconvert"
 version = "0.1.0"
-description = "A unified geospatial conversion toolkit for survey data"
+description = "A Python CLI tool for converting geospatial survey data between KML, CSV, and DXF formats with specialized topographical operations"
 readme = "README.md"
 license = "MIT"
 authors = [
-    {name = "TopoConvert Contributors"},
+    {name = "David Garcia", email = "dgarcia182@gmail.com"},
 ]
 maintainers = [
-    {name = "TopoConvert Contributors"},
+    {name = "David Garcia", email = "dgarcia182@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -27,6 +26,11 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: GIS",
+]
+keywords = [
+    "geospatial", "gis", "survey", "topographical", "kml", "csv", "dxf", 
+    "conversion", "cli", "mapping", "coordinates", "elevation", "contours", 
+    "mesh", "gps", "surveying", "cad", "autocad", "geodata"
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -63,10 +67,10 @@ tools = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/topoconvert"
-Documentation = "https://github.com/yourusername/topoconvert#readme"
-Repository = "https://github.com/yourusername/topoconvert"
-"Bug Tracker" = "https://github.com/yourusername/topoconvert/issues"
+Homepage = "https://github.com/DavGarcia/topoconvert"
+Documentation = "https://github.com/DavGarcia/topoconvert#readme"
+Repository = "https://github.com/DavGarcia/topoconvert.git"
+"Bug Tracker" = "https://github.com/DavGarcia/topoconvert/issues"
 
 [project.scripts]
 topoconvert = "topoconvert.cli:main"
