@@ -6,7 +6,7 @@ from topoconvert.core.kml_contours import convert_kml_contours_to_dxf
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the kml-contours-to-dxf command with the CLI."""
 
     @cli.command("kml-contours-to-dxf")
@@ -52,7 +52,7 @@ def register(cli):
         translate,
         target_epsg,
         wgs84,
-    ):
+    ) -> None:
         """Convert KML contour LineStrings to DXF format.
 
         Reads KML files with LineString elements representing contour lines.

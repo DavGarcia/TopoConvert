@@ -6,7 +6,7 @@ from topoconvert.core.mesh import generate_mesh
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the kml-to-dxf-mesh command with the CLI."""
 
     @cli.command("kml-to-dxf-mesh")
@@ -67,7 +67,7 @@ def register(cli):
         no_wireframe,
         wireframe_color,
         target_epsg,
-    ):
+    ) -> None:
         """Generate 3D TIN mesh from KML points.
 
         Creates a Delaunay triangulated irregular network (TIN) mesh from KML point data

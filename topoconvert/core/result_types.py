@@ -1,6 +1,6 @@
 """Result types for core module return values."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, Any
 
 
@@ -11,14 +11,8 @@ class ProcessingResult:
     success: bool
     output_file: str
     message: str = ""
-    details: Dict[str, Any] = None
-    warnings: List[str] = None
-
-    def __post_init__(self):
-        if self.details is None:
-            self.details = {}
-        if self.warnings is None:
-            self.warnings = []
+    details: Dict[str, Any] = field(default_factory=dict)
+    warnings: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -29,7 +23,7 @@ class PointExtractionResult(ProcessingResult):
     format: str = ""
     elevation_units: str = ""
     coordinate_system: str = ""
-    coordinate_ranges: Dict[str, Tuple[float, float]] = None
+    coordinate_ranges: Dict[str, Tuple[float, float]] = field(default_factory=dict)
     reference_point: Optional[Tuple[float, float, float]] = None
     translated_to_origin: bool = False
 
@@ -80,7 +74,7 @@ class CSVToKMLResult(ProcessingResult):
     elevation_units: str = ""
     point_style: str = ""
     has_labels: bool = False
-    coordinate_bounds: Dict[str, Tuple[float, float]] = None
+    coordinate_bounds: Dict[str, Tuple[float, float]] = field(default_factory=dict)
 
 
 @dataclass
@@ -111,7 +105,7 @@ class CombinedDXFResult(ProcessingResult):
 
     input_file_count: int = 0
     total_points: int = 0
-    layers_created: List[str] = None
+    layers_created: List[str] = field(default_factory=list)
     coordinate_system: str = ""
     reference_point: Optional[Tuple[float, float, float]] = None
     translated_to_origin: bool = False

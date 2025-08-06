@@ -6,7 +6,7 @@ from topoconvert.core.combined_kml import merge_csv_to_kml
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the multi-csv-to-kml command with the CLI."""
 
     @cli.command("multi-csv-to-kml")
@@ -58,7 +58,7 @@ def register(cli):
         z_column,
         elevation_units,
         point_scale,
-    ):
+    ) -> None:
         """Merge CSV files to KML with separate folders.
 
         Each CSV file is placed in its own KML folder with a unique icon style

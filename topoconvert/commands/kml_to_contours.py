@@ -6,7 +6,7 @@ from topoconvert.core.contours import generate_contours
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the kml-to-dxf-contours command with the CLI."""
 
     @cli.command("kml-to-dxf-contours")
@@ -63,7 +63,7 @@ def register(cli):
         label_height,
         no_translate,
         target_epsg,
-    ):
+    ) -> None:
         """Convert KML points to DXF contours.
 
         INPUT_FILE: Path to input KML file containing point data

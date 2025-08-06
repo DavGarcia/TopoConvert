@@ -6,7 +6,7 @@ from topoconvert.core.csv_kml import convert_csv_to_kml
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the csv-to-kml command with the CLI."""
 
     @cli.command("csv-to-kml")
@@ -75,7 +75,7 @@ def register(cli):
         point_color,
         point_scale,
         kml_name,
-    ):
+    ) -> None:
         """Convert CSV survey data to KML format.
 
         INPUT_FILE: Path to input CSV file

@@ -6,7 +6,7 @@ from topoconvert.core.combined_dxf import merge_csv_to_dxf
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the multi-csv-to-dxf command with the CLI."""
 
     @cli.command("multi-csv-to-dxf")
@@ -23,7 +23,7 @@ def register(cli):
     @click.option(
         "--wgs84", is_flag=True, help="Keep coordinates in WGS84 (no projection)"
     )
-    def combined_dxf(csv_files, output, target_epsg, wgs84):
+    def combined_dxf(csv_files, output, target_epsg, wgs84) -> None:
         """Merge CSV files to DXF with separate layers.
 
         Each CSV file is placed on its own layer with a unique color for easy

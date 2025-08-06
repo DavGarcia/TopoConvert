@@ -6,7 +6,7 @@ from topoconvert.core.points import extract_points
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the kml-to-points command with the CLI."""
 
     @cli.command("kml-to-points")
@@ -68,7 +68,7 @@ def register(cli):
         point_color,
         target_epsg,
         wgs84,
-    ):
+    ) -> None:
         """Extract point data from KML files.
 
         Extract points from KML and save in various formats including DXF 3D point cloud,

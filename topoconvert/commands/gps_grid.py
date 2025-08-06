@@ -6,7 +6,7 @@ from topoconvert.core.gps_grid import generate_gps_grid
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the gps-grid command with the CLI."""
 
     @cli.command("gps-grid")
@@ -56,7 +56,7 @@ def register(cli):
         boundary_type,
         point_style,
         grid_name,
-    ):
+    ) -> None:
         """Generate GPS grid points within property boundaries.
 
         Supports KML polygons, CSV boundary points, or CSV point extents with buffer.

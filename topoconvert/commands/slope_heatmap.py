@@ -6,7 +6,7 @@ from topoconvert.core.slope_heatmap import generate_slope_heatmap
 from topoconvert.core.exceptions import TopoConvertError
 
 
-def register(cli):
+def register(cli) -> None:
     """Register the slope-heatmap command with the CLI."""
 
     @cli.command("slope-heatmap")
@@ -87,7 +87,7 @@ def register(cli):
         no_contours,
         contour_interval,
         target_slope,
-    ):
+    ) -> None:
         """Generate slope heatmap from elevation data.
 
         Calculates terrain slope and saves as PNG with color-coded visualization.
