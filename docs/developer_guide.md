@@ -6,7 +6,7 @@ This guide is for developers who want to contribute to TopoConvert or extend its
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Git
 - Virtual environment tool (venv, virtualenv, or conda)
 
@@ -14,7 +14,7 @@ This guide is for developers who want to contribute to TopoConvert or extend its
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/yourusername/topoconvert.git
+   git clone https://github.com/DavGarcia/topoconvert.git
    cd topoconvert
    ```
 

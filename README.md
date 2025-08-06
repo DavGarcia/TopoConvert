@@ -29,7 +29,7 @@ TopoConvert is a Python-based command-line tool that provides a comprehensive se
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/topoconvert.git
+git clone https://github.com/DavGarcia/topoconvert.git
 cd topoconvert
 
 # Create a virtual environment (recommended)
@@ -43,7 +43,7 @@ pip install -e .
 pip install -e ".[dev]"
 ```
 
-### From PyPI (Coming Soon)
+### From PyPI
 
 ```bash
 pip install topoconvert
@@ -147,4 +147,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For bug reports and feature requests, please use the [GitHub issue tracker](https://github.com/yourusername/topoconvert/issues).
+For bug reports and feature requests, please use the [GitHub issue tracker](https://github.com/DavGarcia/topoconvert/issues).

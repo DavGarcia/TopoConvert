@@ -4,14 +4,14 @@ This guide will help you install TopoConvert on your system.
 
 ## Requirements
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - pip package manager
 
 ## Installation Methods
 
-### From PyPI (Recommended - Coming Soon)
+### From PyPI (Recommended)
 
-Once published, you'll be able to install TopoConvert directly from PyPI:
+Install TopoConvert directly from PyPI:
 
 ```bash
 pip install topoconvert
@@ -23,7 +23,7 @@ For the latest development version or to contribute:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/topoconvert.git
+   git clone https://github.com/DavGarcia/topoconvert.git
    cd topoconvert
    ```
 

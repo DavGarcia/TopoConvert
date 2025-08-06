@@ -10,7 +10,7 @@ By participating in this project, you agree to abide by our code of conduct: be 
 
 ### Reporting Issues
 
-1. Check if the issue already exists in the [issue tracker](https://github.com/yourusername/topoconvert/issues)
+1. Check if the issue already exists in the [issue tracker](https://github.com/DavGarcia/topoconvert/issues)
 2. If not, create a new issue with:
    - Clear, descriptive title
    - Detailed description of the problem
@@ -32,7 +32,7 @@ By participating in this project, you agree to abide by our code of conduct: be 
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/yourusername/topoconvert.git
+git clone https://github.com/DavGarcia/topoconvert.git
 cd topoconvert
 
 # Create a virtual environment

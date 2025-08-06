@@ -44,7 +44,7 @@ topoconvert multi-csv-to-dxf *.csv --output merged.dxf --target-epsg 27700
 
 - Use `topoconvert --help` to see all available commands
 - Use `topoconvert <command> --help` for detailed help on any command
-- Check our [GitHub repository](https://github.com/yourusername/topoconvert) for issues and discussions
+- Check our [GitHub repository](https://github.com/DavGarcia/topoconvert) for issues and discussions
 
 ## License
 
