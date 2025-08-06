@@ -1,7 +1,13 @@
 """Test project structure and configuration files."""
 import os
-import tomllib
+import sys
 from pathlib import Path
+
+# Use tomllib for Python 3.11+, fallback to tomli for 3.9-3.10
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 
 def test_root_files_exist():

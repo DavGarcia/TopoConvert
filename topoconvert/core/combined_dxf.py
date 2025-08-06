@@ -4,7 +4,7 @@ Adapted from GPSGrid combined_dxf.py
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import ezdxf
 import pandas as pd
@@ -64,7 +64,7 @@ def merge_csv_to_dxf(
 
 def _read_and_transform_csv(
     csv_file: Path, transformer: Transformer, wgs84: bool = False
-) -> tuple[pd.DataFrame, bool]:
+) -> Tuple[pd.DataFrame, bool]:
     """Read CSV file and transform coordinates to feet"""
     try:
         df = pd.read_csv(str(csv_file))
