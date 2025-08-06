@@ -61,5 +61,5 @@ jobs:
       run: |
         topoconvert --version
         topoconvert --help
-        topoconvert kml-to-contours --help
+        topoconvert kml-to-dxf-contours --help
         topoconvert csv-to-kml --help
