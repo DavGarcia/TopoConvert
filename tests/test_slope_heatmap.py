@@ -63,10 +63,10 @@ class TestSlopeHeatmapCommand:
             
             # Verify it's a valid PNG image
             try:
-                img = Image.open(str(output_file))
-                assert img.format == 'PNG'
-                assert img.size[0] > 0
-                assert img.size[1] > 0
+                with Image.open(str(output_file)) as img:
+                    assert img.format == 'PNG'
+                    assert img.size[0] > 0
+                    assert img.size[1] > 0
             except Exception as e:
                 pytest.fail(f"Generated image is not valid: {e}")
     
@@ -397,8 +397,8 @@ class TestSlopeHeatmapCoreFunction:
             assert output_file.exists()
             
             # Verify it's a valid PNG
-            img = Image.open(str(output_file))
-            assert img.format == 'PNG'
+            with Image.open(str(output_file)) as img:
+                assert img.format == 'PNG'
     
     def test_generate_slope_heatmap_with_options(self, grid_kml):
         """Test slope heatmap generation with various options."""

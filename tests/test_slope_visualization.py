@@ -64,10 +64,10 @@ class TestRenderSlopeHeatmap:
             assert output_file.exists()
             
             # Verify it's a valid PNG
-            img = Image.open(str(output_file))
-            assert img.format == 'PNG'
-            assert img.size[0] > 0
-            assert img.size[1] > 0
+            with Image.open(str(output_file)) as img:
+                assert img.format == 'PNG'
+                assert img.size[0] > 0
+                assert img.size[1] > 0
     
     def test_rendering_with_target_slope(self):
         """Test rendering with target slope colormap."""
@@ -166,8 +166,8 @@ class TestRenderSlopeHeatmap:
             assert output_file.exists()
             
             # Check image has higher resolution
-            img = Image.open(str(output_file))
-            assert img.size[0] > 1000  # Should be larger due to higher DPI
+            with Image.open(str(output_file)) as img:
+                assert img.size[0] > 1000  # Should be larger due to higher DPI
     
     def test_nan_handling_in_visualization(self):
         """Test that NaN values are handled properly in visualization."""
