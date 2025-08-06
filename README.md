@@ -18,6 +18,11 @@ TopoConvert is a Python-based command-line tool that provides a comprehensive se
 - **Smart Defaults**: Optional output files automatically named based on input
 - **No Progress Bars**: Clean, distraction-free command execution
 
+## Requirements
+
+- Python 3.9 or higher
+- All dependencies automatically installed via pip
+
 ## Installation
 
 ### From Source (Development)
