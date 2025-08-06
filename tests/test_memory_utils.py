@@ -97,13 +97,32 @@ class TestMemoryDecorators:
     """Test memory monitoring decorators."""
     
     def test_memory_limit_decorator(self):
-        """Test memory limit decorator."""
-        @memory_limit(max_memory_mb=300.0)  # 300MB limit (accounts for test environment overhead)
+        """Test memory limit decorator with a function that should not exceed limits."""
+        # Get baseline memory usage first
+        import psutil
+        process = psutil.Process()
+        baseline_mb = process.memory_info().rss / (1024 * 1024)
+        
+        # Set limit well above baseline to allow for small allocations
+        limit_mb = baseline_mb + 50.0  # Allow 50MB above baseline
+        
+        @memory_limit(max_memory_mb=limit_mb)
         def small_function():
-            return [i for i in range(1000)]
+            return [i for i in range(1000)]  # Small allocation
         
         result = small_function()
         assert len(result) == 1000
+    
+    def test_memory_limit_enforcement(self):
+        """Test that memory limit decorator actually enforces limits."""
+        @memory_limit(max_memory_mb=1.0)  # Very low limit that should be exceeded
+        def memory_intensive_function():
+            # Allocate 5MB of data
+            return b'x' * (5 * 1024 * 1024)
+        
+        # Should raise MemoryError when limit is exceeded
+        with pytest.raises(MemoryError, match="exceeded limit"):
+            memory_intensive_function()
     
     def test_memory_profiling_decorator(self):
         """Test memory profiling decorator."""
