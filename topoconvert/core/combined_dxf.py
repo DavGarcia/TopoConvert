@@ -143,7 +143,6 @@ def _process_csv_merge(
     datasets = []
 
     # Read & transform each CSV
-    total_files = len(csv_files)
     for i, csv_file in enumerate(csv_files):
         df, has_elevation = _read_and_transform_csv(csv_file, transformer, wgs84)
 

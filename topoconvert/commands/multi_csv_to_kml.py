@@ -87,7 +87,7 @@ def register(cli):
             click.echo(f"\nCreated combined KML: {result.output_file}")
             click.echo(f"- {result.input_file_count} input files in separate folders")
             click.echo(f"- {result.total_points} total points")
-            click.echo(f"- Each dataset has unique icon and color")
+            click.echo("- Each dataset has unique icon and color")
 
             if result.elevations_converted:
                 click.echo("- Elevations converted from feet to meters")

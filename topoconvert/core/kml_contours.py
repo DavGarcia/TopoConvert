@@ -314,7 +314,6 @@ def _process_kml_contours_conversion(
     pms = root.findall(".//kml:Placemark", NS)
     count = 0
     missing_z = 0
-    total_pms = len(pms)
 
     for i, pm in enumerate(pms):
         lines = _collect_linestrings(pm)

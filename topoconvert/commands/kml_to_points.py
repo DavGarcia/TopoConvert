@@ -128,7 +128,7 @@ def register(cli):
                             click.echo(
                                 f"- Reference point (excluded): ({ref_x:.2f}, {ref_y:.2f}, {ref_z:.2f} ft)"
                             )
-                        click.echo(f"- First point translated to origin")
+                        click.echo("- First point translated to origin")
                     else:
                         if result.details.get("wgs84"):
                             click.echo(

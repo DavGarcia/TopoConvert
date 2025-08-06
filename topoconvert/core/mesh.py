@@ -143,9 +143,6 @@ def _create_mesh_dxf(
     except Exception as e:
         raise ProcessingError(f"Error creating triangulation: {e}")
 
-    # Store for result reporting
-    triangle_count = len(tri.simplices)
-
     # Create DXF
     doc = ezdxf.new("R2010")
     msp = doc.modelspace()

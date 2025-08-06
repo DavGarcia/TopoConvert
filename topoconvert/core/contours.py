@@ -8,12 +8,10 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-import numpy as np
-import matplotlib
-
-matplotlib.use("Agg")  # For headless environments
-import matplotlib.pyplot as plt
 import ezdxf
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 from ezdxf.enums import TextEntityAlignment
 from scipy.interpolate import griddata
 
@@ -22,9 +20,12 @@ from topoconvert.core.exceptions import (
     ProcessingError,
     ContourGenerationError,
 )
+from topoconvert.core.result_types import ContourGenerationResult
 from topoconvert.core.utils import validate_file_path, ensure_file_extension
 from topoconvert.utils.projection import get_target_crs, get_transformer
-from topoconvert.core.result_types import ContourGenerationResult
+
+# Configure matplotlib for headless environments
+matplotlib.use("Agg")
 
 
 NS = {"kml": "http://www.opengis.net/kml/2.2"}

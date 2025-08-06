@@ -203,7 +203,7 @@ def _write_txt_points(
 ) -> None:
     """Write points to TXT format"""
     with open(output_file, "w") as f:
-        f.write(f"KML Points Export\n")
+        f.write("KML Points Export\n")
         f.write(f"Elevation units: {elevation_units}\n")
         f.write(f"Total points: {len(points)}\n")
         f.write("Format: Longitude, Latitude, Elevation\n")

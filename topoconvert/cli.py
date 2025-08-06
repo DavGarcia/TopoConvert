@@ -4,6 +4,17 @@ import click
 import sys
 
 from topoconvert import __version__
+from topoconvert.commands import (
+    kml_to_contours,
+    csv_to_kml,
+    kml_to_points,
+    kml_to_mesh,
+    multi_csv_to_dxf,
+    multi_csv_to_kml,
+    slope_heatmap,
+    kml_contours_to_dxf,
+    gps_grid,
+)
 
 
 @click.group()
@@ -17,19 +28,6 @@ def cli():
     """
     pass
 
-
-# Import and register all commands
-from topoconvert.commands import (
-    kml_to_contours,
-    csv_to_kml,
-    kml_to_points,
-    kml_to_mesh,
-    multi_csv_to_dxf,
-    multi_csv_to_kml,
-    slope_heatmap,
-    kml_contours_to_dxf,
-    gps_grid,
-)
 
 # Register all commands
 kml_to_contours.register(cli)

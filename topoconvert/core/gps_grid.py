@@ -67,7 +67,7 @@ def generate_gps_grid(
                     input_type = "csv-boundary"
                 else:
                     input_type = "csv-extent"
-            except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError) as e:
+            except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError):
                 # If CSV parsing fails, assume it's a boundary file
                 input_type = "csv-boundary"
         else:

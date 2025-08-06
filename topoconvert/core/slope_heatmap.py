@@ -659,7 +659,7 @@ def _create_stats_text_from_data(slope_stats, slope_units, run_length):
         unit_str = f":{run_length:.0f}"
         fmt = ".2f"
 
-    stats = f"Slope Statistics:\n"
+    stats = "Slope Statistics:\n"
     stats += f"Min: {slope_stats['min']:{fmt}}{unit_str}\n"
     stats += f"Max: {slope_stats['max']:{fmt}}{unit_str}\n"
     stats += f"Mean: {slope_stats['mean']:{fmt}}{unit_str}\n"

@@ -108,7 +108,7 @@ def _create_kml_header(
   <Document>
     <name>{name}</name>
     <description>GPS points converted from CSV</description>
-    
+
     <Style id="{style_id}">
       <IconStyle>
         <color>{color}</color>
