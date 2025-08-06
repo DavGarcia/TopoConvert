@@ -9,7 +9,6 @@ def test_root_files_exist():
     root_dir = Path(__file__).parent.parent
     required_files = [
         'pyproject.toml',
-        'requirements.txt',
         '.gitignore',
         'README.md',
         'LICENSE',

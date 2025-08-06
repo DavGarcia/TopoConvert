@@ -1,4 +1,5 @@
 """Result types for core module return values."""
+
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple, Any
 
@@ -6,12 +7,13 @@ from typing import List, Dict, Optional, Tuple, Any
 @dataclass
 class ProcessingResult:
     """Base result type for all processing operations."""
+
     success: bool
     output_file: str
     message: str = ""
     details: Dict[str, Any] = None
     warnings: List[str] = None
-    
+
     def __post_init__(self):
         if self.details is None:
             self.details = {}
@@ -22,6 +24,7 @@ class ProcessingResult:
 @dataclass
 class PointExtractionResult(ProcessingResult):
     """Result from point extraction operations."""
+
     point_count: int = 0
     format: str = ""
     elevation_units: str = ""
@@ -34,6 +37,7 @@ class PointExtractionResult(ProcessingResult):
 @dataclass
 class ContourGenerationResult(ProcessingResult):
     """Result from contour generation operations."""
+
     contour_count: int = 0
     elevation_levels: int = 0
     contour_interval: float = 0.0
@@ -46,6 +50,7 @@ class ContourGenerationResult(ProcessingResult):
 @dataclass
 class MeshGenerationResult(ProcessingResult):
     """Result from mesh generation operations."""
+
     face_count: int = 0
     vertex_count: int = 0
     edge_count: int = 0
@@ -60,6 +65,7 @@ class MeshGenerationResult(ProcessingResult):
 @dataclass
 class GridGenerationResult(ProcessingResult):
     """Result from GPS grid generation operations."""
+
     grid_points: int = 0
     spacing: float = 0.0
     boundary_type: str = ""
@@ -69,6 +75,7 @@ class GridGenerationResult(ProcessingResult):
 @dataclass
 class CSVToKMLResult(ProcessingResult):
     """Result from CSV to KML conversion."""
+
     valid_points: int = 0
     elevation_units: str = ""
     point_style: str = ""
@@ -79,6 +86,7 @@ class CSVToKMLResult(ProcessingResult):
 @dataclass
 class KMLContoursResult(ProcessingResult):
     """Result from KML contours to DXF conversion."""
+
     contour_count: int = 0
     missing_elevations: int = 0
     coordinate_system: str = ""
@@ -91,6 +99,7 @@ class KMLContoursResult(ProcessingResult):
 @dataclass
 class CombinedKMLResult(ProcessingResult):
     """Result from combining multiple CSV files to KML."""
+
     input_file_count: int = 0
     total_points: int = 0
     elevations_converted: bool = False
@@ -99,6 +108,7 @@ class CombinedKMLResult(ProcessingResult):
 @dataclass
 class CombinedDXFResult(ProcessingResult):
     """Result from combining multiple CSV files to DXF."""
+
     input_file_count: int = 0
     total_points: int = 0
     layers_created: List[str] = None
@@ -110,6 +120,7 @@ class CombinedDXFResult(ProcessingResult):
 @dataclass
 class SlopeHeatmapResult(ProcessingResult):
     """Result from slope heatmap generation."""
+
     grid_resolution: Tuple[int, int] = (0, 0)
     slope_units: str = ""
     smoothing_applied: Optional[float] = None

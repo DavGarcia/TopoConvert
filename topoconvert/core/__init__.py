@@ -6,4 +6,4 @@ for geospatial data processing and conversion.
 
 from topoconvert.core import exceptions, utils
 
-__all__ = ['exceptions', 'utils']
+__all__ = ["exceptions", "utils"]

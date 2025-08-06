@@ -1,4 +1,5 @@
 """TopoConvert CLI entry point."""
+
 import click
 import sys
 
@@ -10,7 +11,7 @@ from topoconvert import __version__
 @click.help_option("-h", "--help")
 def cli():
     """TopoConvert - A unified geospatial conversion toolkit.
-    
+
     Convert and process survey data between various formats including
     KML, CSV, and DXF with specialized topographical operations.
     """
@@ -27,7 +28,7 @@ from topoconvert.commands import (
     multi_csv_to_kml,
     slope_heatmap,
     kml_contours_to_dxf,
-    gps_grid
+    gps_grid,
 )
 
 # Register all commands
@@ -40,6 +41,7 @@ multi_csv_to_kml.register(cli)
 slope_heatmap.register(cli)
 kml_contours_to_dxf.register(cli)
 gps_grid.register(cli)
+
 
 def main():
     """Main entry point for the CLI."""
