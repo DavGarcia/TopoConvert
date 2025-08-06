@@ -363,15 +363,25 @@ class TestMultiCsvToKmlCommand:
         """Test error handling when output option is missing."""
         runner = CliRunner()
         
-        result = runner.invoke(cli, [
-            'multi-csv-to-kml',
-            'testdata/survey_data_1.csv',
-            'testdata/survey_data_2.csv'
-            # Missing --output option
-        ])
-        
-        assert result.exit_code != 0
-        assert 'Missing option' in result.output or 'required' in result.output.lower()
+        # Create temporary CSV files to avoid path issues
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create minimal CSV files for the test
+            csv1 = Path(temp_dir) / "test1.csv"
+            csv2 = Path(temp_dir) / "test2.csv"
+            
+            csv_content = "Latitude,Longitude,Elevation\n40.7128,-74.0060,10\n"
+            csv1.write_text(csv_content)
+            csv2.write_text(csv_content)
+            
+            result = runner.invoke(cli, [
+                'multi-csv-to-kml',
+                str(csv1),
+                str(csv2)
+                # Missing --output option
+            ])
+            
+            assert result.exit_code != 0
+            assert 'Missing option' in result.output or 'required' in result.output.lower()
     
     def test_single_csv_file(self):
         """Test that command works with just one CSV file."""
