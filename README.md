@@ -17,6 +17,7 @@ TopoConvert is a Python-based command-line tool that provides a comprehensive se
 - **Coordinate System Support**: Handle various projection systems via pyproj
 - **Smart Defaults**: Optional output files automatically named based on input
 - **No Progress Bars**: Clean, distraction-free command execution
+- **Production-Ready Robustness**: Comprehensive edge case testing ensures reliable handling of real-world data quality issues
 
 ## Requirements
 
@@ -98,19 +99,53 @@ For detailed usage of each command:
 topoconvert <command> --help
 ```
 
+## Reliability & Testing
+
+TopoConvert v0.1.2+ includes a comprehensive edge case testing system that ensures robust handling of real-world data challenges:
+
+### Data Quality Resilience
+- **Corrupted File Handling**: Graceful failure with clear error messages for malformed KML, CSV, and DXF files
+- **Invalid Data Detection**: Systematic handling of corrupted coordinates, missing headers, encoding issues, and inconsistent data structures
+- **Boundary Condition Testing**: Validation with extreme coordinate values, minimal datasets, and edge cases
+- **Memory Efficiency**: Stress testing with large datasets (50k+ points) and memory leak detection
+
+### Quality Assurance
+- **88 Comprehensive Edge Case Tests**: Covering corruption scenarios, memory limits, and boundary conditions
+- **Error Message Consistency**: User-friendly error reporting with consistent exit codes across all commands
+- **Performance Regression Prevention**: Automated benchmarking with threshold-based regression detection
+- **Production-Ready Validation**: No crashes on corrupted input, proper cleanup, and informative feedback
+
+### Testing Infrastructure
+```bash
+# Run edge case tests
+pytest tests/test_*corruption* tests/test_*memory* tests/test_*benchmark*
+
+# Memory stress testing
+pytest tests/test_memory_utils.py -v
+
+# Performance benchmarking
+pytest tests/test_benchmark_config.py -v
+```
+
 ## Development
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (450+ tests including edge cases)
 pytest
 
 # Run with coverage
 pytest --cov=topoconvert
 
-# Run specific test file
-pytest tests/test_kml_to_contours.py
+# Run core functionality tests only
+pytest tests/test_*.py -k "not (corruption or memory or benchmark)"
+
+# Run specific test categories
+pytest tests/test_kml_to_contours.py  # Core functionality
+pytest tests/test_*corruption*        # Corruption handling
+pytest tests/test_*memory*           # Memory efficiency
+pytest tests/test_*benchmark*        # Performance testing
 ```
 
 ### Code Quality
@@ -144,6 +179,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Uses [ezdxf](https://ezdxf.readthedocs.io/) for DXF file handling
 - Powered by [pandas](https://pandas.pydata.org/) for data manipulation
 - Coordinate transformations via [pyproj](https://pyproj4.github.io/pyproj/)
+- Quality assurance enhanced by:
+  - [pytest-benchmark](https://pytest-benchmark.readthedocs.io/) for performance regression testing
+  - [Hypothesis](https://hypothesis.readthedocs.io/) for property-based testing
+  - [psutil](https://psutil.readthedocs.io/) for system memory monitoring
 
 ## Support
 
