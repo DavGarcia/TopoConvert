@@ -7,7 +7,7 @@ name = "topoconvert"
 version = "0.1.0"
 description = "A Python CLI tool for converting geospatial survey data between KML, CSV, and DXF formats with specialized topographical operations"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 authors = [
     {name = "David Garcia", email = "dgarcia182@gmail.com"},
 ]
