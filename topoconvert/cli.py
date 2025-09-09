@@ -14,6 +14,7 @@ from topoconvert.commands import (
     slope_heatmap,
     kml_contours_to_dxf,
     gps_grid,
+    kml_relative_elevation,
 )
 
 
@@ -39,6 +40,7 @@ multi_csv_to_kml.register(cli)
 slope_heatmap.register(cli)
 kml_contours_to_dxf.register(cli)
 gps_grid.register(cli)
+kml_relative_elevation.register(cli)
 
 
 def main() -> None:

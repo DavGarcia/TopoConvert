@@ -72,6 +72,9 @@ topoconvert multi-csv-to-dxf file1.csv file2.csv file3.csv --output merged.dxf
 
 # Combine multiple CSV files to KML
 topoconvert multi-csv-to-kml file1.csv file2.csv file3.csv output.kml
+
+# Convert KML elevations to relative values (useful for elevation analysis)
+topoconvert kml-relative-elevation survey.kml --reference-method min --output-units feet
 ```
 
 ## Available Commands
@@ -89,6 +92,7 @@ topoconvert multi-csv-to-kml file1.csv file2.csv file3.csv output.kml
 ### KML Generation
 - `multi-csv-to-kml` - Combine multiple CSV files into a single KML
 - `gps-grid` - Generate GPS grid points within property boundaries
+- `kml-relative-elevation` - Convert KML elevations to relative values based on reference methods
 
 ### Analysis & Visualization
 - `slope-heatmap` - Generate slope analysis PNG (contours by default, color-blind friendly options)

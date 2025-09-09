@@ -120,3 +120,18 @@ class SlopeHeatmapResult(ProcessingResult):
     smoothing_applied: Optional[float] = None
     output_dpi: int = 0
     point_count: int = 0
+
+
+@dataclass
+class RelativeElevationResult(ProcessingResult):
+    """Result from relative elevation processing."""
+
+    point_count: int = 0
+    input_elevation_units: str = ""
+    output_elevation_units: str = ""
+    reference_method: str = ""
+    reference_value: float = 0.0
+    elevation_range: Tuple[float, float] = (0.0, 0.0)
+    relative_range: Tuple[float, float] = (0.0, 0.0)
+    label_format: str = ""
+    style_applied: bool = False
