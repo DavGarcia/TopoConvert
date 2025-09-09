@@ -44,6 +44,7 @@ class TestGpsGridCommand:
         assert '--boundary-type' in result.output
         assert '--point-style' in result.output
         assert '--grid-name' in result.output
+        assert '--start-corner' in result.output
     
     def test_basic_gps_grid_generation_kml(self):
         """Test basic GPS grid generation from KML polygon."""
@@ -328,6 +329,72 @@ class TestGpsGridCommand:
             assert result.exit_code == 0
             assert "200.0 ft spacing" in result.output
     
+    def test_gps_grid_with_different_start_corners(self):
+        """Test GPS grid generation with different starting corners."""
+        runner = CliRunner()
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a simple rectangular CSV boundary for predictable results
+            input_file = Path(temp_dir) / "boundary.csv"
+            
+            df = pd.DataFrame({
+                'Latitude': [37.420, 37.420, 37.430, 37.430],
+                'Longitude': [-122.080, -122.070, -122.070, -122.080]
+            })
+            df.to_csv(input_file, index=False)
+            
+            # Test all four corner options
+            corners = ['sw', 'se', 'nw', 'ne']
+            grid_results = {}
+            
+            for corner in corners:
+                output_file = Path(temp_dir) / f"grid_{corner}.kml"
+                
+                result = runner.invoke(cli, [
+                    'gps-grid',
+                    str(input_file),
+                    str(output_file),
+                    '--input-type', 'csv-boundary',
+                    '--start-corner', corner,
+                    '--spacing', '200'  # Large spacing for predictable results
+                ])
+                
+                assert result.exit_code == 0
+                assert output_file.exists()
+                
+                # Parse the output to get grid points
+                tree = ET.parse(str(output_file))
+                root = tree.getroot()
+                ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+                
+                # Extract grid points (skip boundary placemark)
+                grid_points = []
+                for placemark in root.findall('.//kml:Placemark', ns):
+                    name_elem = placemark.find('kml:name', ns)
+                    if name_elem is not None and name_elem.text.startswith('Grid'):
+                        coord_elem = placemark.find('.//kml:coordinates', ns)
+                        if coord_elem is not None:
+                            coords = coord_elem.text.strip().split(',')
+                            if len(coords) >= 2:
+                                lon, lat = float(coords[0]), float(coords[1])
+                                grid_id = int(name_elem.text.split()[1])
+                                grid_points.append((grid_id, lon, lat))
+                
+                # Sort by grid ID to see the order
+                grid_points.sort()
+                grid_results[corner] = grid_points
+            
+            # Verify that we got points for all corners
+            for corner in corners:
+                assert len(grid_results[corner]) > 0, f"No grid points generated for {corner} corner"
+            
+            # The first point (ID=1) should be in different locations based on starting corner
+            first_points = {corner: grid_results[corner][0] for corner in corners if grid_results[corner]}
+            
+            # Verify we have different starting points for different corners
+            unique_first_points = set((pt[1], pt[2]) for pt in first_points.values())
+            assert len(unique_first_points) > 1, "Different start corners should produce different first points"
+
     def test_invalid_input_file(self):
         """Test error handling for invalid input files."""
         runner = CliRunner()
@@ -613,6 +680,44 @@ class TestGpsGridUtilityFunctions:
             assert -122.08 <= point[0] <= -122.07
             assert 37.42 <= point[1] <= 37.43
     
+    def test_generate_grid_with_different_start_corners(self):
+        """Test grid generation with different starting corners."""
+        # Create simple rectangular boundary
+        boundary = [
+            (-122.08, 37.42),
+            (-122.07, 37.42),
+            (-122.07, 37.43),
+            (-122.08, 37.43),
+            (-122.08, 37.42)  # Closed
+        ]
+        
+        # Test all corners with large spacing to get predictable results
+        spacing = 2000.0
+        results = {}
+        
+        for corner in ['sw', 'se', 'nw', 'ne']:
+            grid_points = _generate_grid_within_polygon(boundary, spacing, corner)
+            results[corner] = grid_points
+            
+            # Should get points for all corners
+            assert len(grid_points) > 0, f"No points generated for {corner} corner"
+            
+            # All points should have proper format
+            for point in grid_points:
+                assert len(point) == 3  # lon, lat, id
+                assert isinstance(point[0], float)  # longitude
+                assert isinstance(point[1], float)  # latitude
+                assert isinstance(point[2], int)    # point id
+        
+        # The first point (ID=1) should be different for different corners
+        first_points = [(results[corner][0][0], results[corner][0][1]) 
+                       for corner in ['sw', 'se', 'nw', 'ne'] 
+                       if results[corner]]
+        
+        # Should have at least 2 different first points for different corners
+        unique_first_points = set(first_points)
+        assert len(unique_first_points) > 1, "Different corners should produce different first points"
+
     def test_generate_grid_with_small_polygon(self):
         """Test grid generation with very small polygon."""
         # Create tiny triangle

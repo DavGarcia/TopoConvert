@@ -32,6 +32,8 @@ def generate_gps_grid(
     point_style: str = "circle",
     point_color: str = "ff00ff00",
     grid_name: str = "GPS Grid",
+    start_corner: str = "sw",
+    include_boundary: bool = False,
 ) -> GridGenerationResult:
     """
     Generate GPS grid points within property boundaries.
@@ -47,6 +49,8 @@ def generate_gps_grid(
         point_style: Point style in output KML
         point_color: Point color in AABBGGRR format
         grid_name: Name for the grid in output KML
+        start_corner: Starting corner for grid generation ('sw', 'se', 'nw', 'ne')
+        include_boundary: Whether to include boundary polygon in output KML
     """
     # Validate input
     input_file = Path(input_file)
@@ -91,7 +95,7 @@ def generate_gps_grid(
         raise ProcessingError("Need at least 3 points to create a boundary")
 
     # Generate grid points
-    grid_points = _generate_grid_within_polygon(boundary_coords, spacing)
+    grid_points = _generate_grid_within_polygon(boundary_coords, spacing, start_corner)
 
     if not grid_points:
         raise ProcessingError("No grid points generated within boundary")
@@ -105,6 +109,7 @@ def generate_gps_grid(
         point_style,
         point_color,
         spacing,
+        include_boundary,
     )
 
     # Return result
@@ -268,7 +273,7 @@ def _create_extent_boundary_from_csv(
 
 
 def _generate_grid_within_polygon(
-    boundary_coords: List[Tuple[float, float]], spacing_ft: float
+    boundary_coords: List[Tuple[float, float]], spacing_ft: float, start_corner: str = "sw"
 ) -> List[Tuple[float, float, int]]:
     """Generate regular grid points within polygon boundary"""
     # Create shapely polygon
@@ -288,20 +293,70 @@ def _generate_grid_within_polygon(
     lon_spacing = spacing_ft / (288200 * math.cos(math.radians(avg_lat)))
     lat_spacing = spacing_ft / 364000
 
-    # Generate grid
+    # Find the actual corner coordinates from the boundary polygon
+    def find_corner_coords(boundary_coords, corner):
+        """Find the actual corner coordinates from boundary points."""
+        lons = [p[0] for p in boundary_coords[:-1]]  # Exclude duplicate closing point
+        lats = [p[1] for p in boundary_coords[:-1]]
+        
+        if corner == "sw":
+            # Find point closest to southwest (min lon, min lat)
+            target_lon, target_lat = min(lons), min(lats)
+        elif corner == "se":
+            # Find point closest to southeast (max lon, min lat)
+            target_lon, target_lat = max(lons), min(lats)
+        elif corner == "nw":
+            # Find point closest to northwest (min lon, max lat)
+            target_lon, target_lat = min(lons), max(lats)
+        else:  # ne
+            # Find point closest to northeast (max lon, max lat)
+            target_lon, target_lat = max(lons), max(lats)
+        
+        # Find the boundary point closest to this target corner
+        min_distance = float('inf')
+        corner_lon, corner_lat = target_lon, target_lat
+        
+        for lon, lat in boundary_coords[:-1]:
+            distance = ((lon - target_lon) ** 2 + (lat - target_lat) ** 2) ** 0.5
+            if distance < min_distance:
+                min_distance = distance
+                corner_lon, corner_lat = lon, lat
+        
+        return corner_lon, corner_lat
+
+    # Generate grid based on starting corner
     grid_points = []
     point_id = 1
+    
+    # Get the actual corner coordinates
+    corner_lon, corner_lat = find_corner_coords(boundary_coords, start_corner)
 
-    lat = min_lat
-    while lat <= max_lat:
-        lon = min_lon
-        while lon <= max_lon:
+    # Determine starting position and direction based on corner
+    if start_corner == "sw":  # Southwest (current default)
+        start_lat, end_lat, lat_step = corner_lat, max_lat, lat_spacing
+        start_lon, end_lon, lon_step = corner_lon, max_lon, lon_spacing
+    elif start_corner == "se":  # Southeast  
+        start_lat, end_lat, lat_step = corner_lat, max_lat, lat_spacing
+        start_lon, end_lon, lon_step = corner_lon, min_lon, -lon_spacing
+    elif start_corner == "nw":  # Northwest
+        start_lat, end_lat, lat_step = corner_lat, min_lat, -lat_spacing
+        start_lon, end_lon, lon_step = corner_lon, max_lon, lon_spacing
+    else:  # ne - Northeast
+        start_lat, end_lat, lat_step = corner_lat, min_lat, -lat_spacing
+        start_lon, end_lon, lon_step = corner_lon, min_lon, -lon_spacing
+
+    # Generate grid points
+    lat = start_lat
+    while (lat_step > 0 and lat <= end_lat) or (lat_step < 0 and lat >= end_lat):
+        lon = start_lon
+        while (lon_step > 0 and lon <= end_lon) or (lon_step < 0 and lon >= end_lon):
             point = Point(lon, lat)
-            if polygon.contains(point):
+            # Use contains or touches to include points on the boundary
+            if polygon.contains(point) or polygon.touches(point):
                 grid_points.append((lon, lat, point_id))
                 point_id += 1
-            lon += lon_spacing
-        lat += lat_spacing
+            lon += lon_step
+        lat += lat_step
 
     return grid_points
 
@@ -314,6 +369,7 @@ def _write_grid_kml(
     point_style: str,
     point_color: str,
     spacing: float,
+    include_boundary: bool = True,
 ) -> None:
     """Write grid points and boundary to KML file"""
     # Create KML structure
@@ -346,34 +402,36 @@ def _write_grid_kml(
     else:  # square
         href.text = "http://maps.google.com/mapfiles/kml/shapes/placemark_square.png"
 
-    # Boundary style
-    boundary_style = ET.SubElement(doc, "Style", id="boundaryStyle")
-    line_style = ET.SubElement(boundary_style, "LineStyle")
-    line_color = ET.SubElement(line_style, "color")
-    line_color.text = "ff0000ff"  # Red
-    line_width = ET.SubElement(line_style, "width")
-    line_width.text = "2"
-    poly_style = ET.SubElement(boundary_style, "PolyStyle")
-    poly_fill = ET.SubElement(poly_style, "fill")
-    poly_fill.text = "0"
+    # Add boundary section only if requested
+    if include_boundary:
+        # Boundary style
+        boundary_style = ET.SubElement(doc, "Style", id="boundaryStyle")
+        line_style = ET.SubElement(boundary_style, "LineStyle")
+        line_color = ET.SubElement(line_style, "color")
+        line_color.text = "ff0000ff"  # Red
+        line_width = ET.SubElement(line_style, "width")
+        line_width.text = "2"
+        poly_style = ET.SubElement(boundary_style, "PolyStyle")
+        poly_fill = ET.SubElement(poly_style, "fill")
+        poly_fill.text = "0"
 
-    # Add boundary folder
-    boundary_folder = ET.SubElement(doc, "Folder")
-    folder_name = ET.SubElement(boundary_folder, "name")
-    folder_name.text = "Property Boundary"
+        # Add boundary folder
+        boundary_folder = ET.SubElement(doc, "Folder")
+        folder_name = ET.SubElement(boundary_folder, "name")
+        folder_name.text = "Property Boundary"
 
-    # Add boundary polygon
-    pm = ET.SubElement(boundary_folder, "Placemark")
-    pm_name = ET.SubElement(pm, "name")
-    pm_name.text = "Boundary"
-    style_url = ET.SubElement(pm, "styleUrl")
-    style_url.text = "#boundaryStyle"
+        # Add boundary polygon
+        pm = ET.SubElement(boundary_folder, "Placemark")
+        pm_name = ET.SubElement(pm, "name")
+        pm_name.text = "Boundary"
+        style_url = ET.SubElement(pm, "styleUrl")
+        style_url.text = "#boundaryStyle"
 
-    polygon = ET.SubElement(pm, "Polygon")
-    outer = ET.SubElement(polygon, "outerBoundaryIs")
-    ring = ET.SubElement(outer, "LinearRing")
-    coords = ET.SubElement(ring, "coordinates")
-    coords.text = " ".join([f"{lon},{lat},0" for lon, lat in boundary_coords])
+        polygon = ET.SubElement(pm, "Polygon")
+        outer = ET.SubElement(polygon, "outerBoundaryIs")
+        ring = ET.SubElement(outer, "LinearRing")
+        coords = ET.SubElement(ring, "coordinates")
+        coords.text = " ".join([f"{lon},{lat},0" for lon, lat in boundary_coords])
 
     # Add grid points folder
     grid_folder = ET.SubElement(doc, "Folder")

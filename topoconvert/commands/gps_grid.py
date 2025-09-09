@@ -47,6 +47,17 @@ def register(cli) -> None:
         default="GPS Grid",
         help="Name for the grid in output KML (default: GPS Grid)",
     )
+    @click.option(
+        "--start-corner",
+        type=click.Choice(["sw", "se", "nw", "ne"]),
+        default="sw",
+        help="Starting corner for grid generation (default: sw - southwest)",
+    )
+    @click.option(
+        "--include-boundary/--no-boundary",
+        default=False,
+        help="Include boundary polygon in output KML (default: no boundary)",
+    )
     def gps_grid(
         input_file,
         output_file,
@@ -56,11 +67,14 @@ def register(cli) -> None:
         boundary_type,
         point_style,
         grid_name,
+        start_corner,
+        include_boundary,
     ) -> None:
         """Generate GPS grid points within property boundaries.
 
         Supports KML polygons, CSV boundary points, or CSV point extents with buffer.
         The grid points are generated within the specified boundaries for field surveys.
+        Grid can start from any corner (SW, SE, NW, NE) for systematic field sampling.
 
         INPUT_FILE: Input file (KML with polygons or CSV with points)
         OUTPUT_FILE: Output KML file with grid points
@@ -76,6 +90,8 @@ def register(cli) -> None:
                 boundary_type=boundary_type,
                 point_style=point_style,
                 grid_name=grid_name,
+                start_corner=start_corner,
+                include_boundary=include_boundary,
             )
 
             # Display results
