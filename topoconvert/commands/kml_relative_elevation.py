@@ -49,7 +49,7 @@ def register(cli) -> None:
         label_format,
         apply_style,
     ) -> None:
-        """Convert KML elevations to relative values based on reference method.
+        """Convert KML elevations to relative values.
         
         This command processes KML files containing elevation data and converts
         the elevations to relative values based on a reference point (minimum,

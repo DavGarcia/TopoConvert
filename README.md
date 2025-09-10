@@ -13,6 +13,7 @@ TopoConvert is a Python-based command-line tool that provides a comprehensive se
 - **Mesh Generation**: Generate triangulated meshes from survey points (with optional wireframe)
 - **Slope Analysis**: Create slope heatmaps with contours, target slope settings, and color-blind friendly options
 - **GPS Grid Generation**: Generate GPS grid layouts within property boundaries (supports convex/concave hulls)
+- **Relative Elevation Analysis**: Convert KML elevations to relative values based on reference methods (min/max/mean)
 - **Batch Processing**: Combine multiple CSV files into DXF (separate layers) or KML
 - **Coordinate System Support**: Handle various projection systems via pyproj
 - **Smart Defaults**: Optional output files automatically named based on input
