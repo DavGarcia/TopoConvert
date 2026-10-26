@@ -1,8 +1,45 @@
 # TopoConvert
 
-A unified geospatial conversion toolkit for survey data processing and transformation.
+A unified geospatial conversion toolkit and **7-Step Interactive Persian (RTL) Topographic Survey Web Application** for survey data processing, constrained TIN triangulation, contouring, volume analysis, and CAD DXF generation.
 
-## Overview
+## New: Interactive 7-Step Topographic Survey Web App (`survey_web` + `survey_core`)
+
+TopoConvert now includes a full-featured, mobile-first Persian (RTL) engineering web application for processing total-station and GNSS survey files (`ID,Code,Northing,Easting,Elevation`):
+
+1. **مرحله ۱ — بارگذاری و تشخیص فرمت (`survey_core.io`)**: Auto-detects delimiter (comma/tab/semicolon/whitespace), header rows, and Northing/Easting column order ($X = \text{Easting}, Y = \text{Northing}, Z = \text{Elevation}$ in projected UTM meters), shifts coordinates to a local origin $(E_0, N_0, Z_0)$ for floating-point stability, and flags CRS assumptions (`EPSG:32640` default).
+2. **مرحله ۲ — پاک‌سازی نقاط تکراری و پرت (`survey_core.clean`)**: Vectorized 2D KD-tree (`cKDTree.query_pairs`) duplicate removal and local MAD z-score elevation blunder detection with interactive sliders.
+3. **مرحله ۳ — مدیریت کدها و خطوط شکست (`survey_core.codes`)**: Never guesses unknown survey codes (`AF`, `J`, `END`, etc.); surfaces a code table where engineers assign `point`, `breakline`, `boundary`, or `ignore` roles and custom layer colors.
+4. **مرحله ۴ — مثلث‌بندی شبکه نامنظم (`survey_core.tin`)**: Delaunay triangulation (`scipy.spatial.Delaunay`) in local coordinates with Sloan constrained breakline edge recovery and optional `civpy`-style breakline densification.
+5. **مرحله ۵ — فیلتر اضلاع بلند و مرز محدوده (`survey_core.filt`)**: 60 FPS live `max_edge_length` and `min_angle_deg` filtering in the 2D/3D viewer with real-time planimetric and 3D surface area recalculation (eliminating spurious convex-hull bridging triangles on narrow corridor surveys).
+6. **مرحله ۶ — منحنی‌های میزان و نقشه شیب (`survey_core.contour`)**: Direct triangle-plane contour slicing (minor & major contours with rotated elevation labels) plus an interactive slope heatmap.
+7. **مرحله ۷ — گزارش نهایی، پروفیل طولی و خروجی CAD (`survey_core.metrics`, `export`, `report`)**: Planimetric vs. 3D surface area, truncated-prism volume, interactive SVG longitudinal corridor profile, multi-layer AutoCAD R2010 `.dxf` export (verified with `ezdxf.audit()`), cleaned `.csv` export, and printable A4 RTL Persian engineering report.
+
+### Running the Web Application Locally
+
+```bash
+# Install TopoConvert with web & dev dependencies
+pip install -e ".[web,dev]"
+
+# (Optional) Rebuild the React + TypeScript + Vite frontend bundle
+cd frontend && npm install && npm run build && cd ..
+
+# Start the FastAPI server on http://0.0.0.0:8000
+uvicorn survey_web.app:app --host 0.0.0.0 --port 8000
+```
+
+### Running with Docker or Deploying to Render
+
+```bash
+# Build and run the multi-stage production container
+docker build -t topoconvert-web .
+docker run --rm -p 8000:8000 topoconvert-web
+```
+
+A verified `render.yaml` Blueprint is included at the repository root for one-click deployment on Render (free tier Docker web service with `/healthz` health check). See [ARCHITECTURE.md](ARCHITECTURE.md) for coordinate math details, narrow-strip area analysis, and dependency license audit.
+
+---
+
+## Overview (CLI Toolkit)
 
 TopoConvert is a Python-based command-line tool that provides a comprehensive set of utilities for converting and processing geospatial survey data between various formats including KML, CSV, and DXF. It's designed specifically for surveyors, GIS professionals, and engineers who need to transform topographical data efficiently.
 

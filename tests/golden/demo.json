@@ -1,0 +1,36 @@
+{
+  "file": "samples/demo.txt",
+  "original_filename": "افتر_اقدسیه42_110047.txt",
+  "point_count": 216,
+  "codes": {
+    "AF": 211,
+    "J": 4,
+    "END": 1
+  },
+  "extents": {
+    "easting_min": 721675.738,
+    "easting_max": 721957.520,
+    "northing_min": 4028664.449,
+    "northing_max": 4028967.348,
+    "z_min": 1055.165,
+    "z_max": 1056.636,
+    "z_mean": 1055.860
+  },
+  "default_crs": "EPSG:32640",
+  "unfiltered_tin": {
+    "triangle_count": 418,
+    "plan_area_m2": 2297.493,
+    "surface_area_3d_m2": 2471.650,
+    "plan_area_tolerance_m2": 2.0,
+    "surface_area_3d_tolerance_m2": 15.0
+  },
+  "filtered_tin_10m": {
+    "max_edge_length_m": 10.0,
+    "triangle_count": 310,
+    "plan_area_m2": 1028.389,
+    "surface_area_3d_m2": 1080.420,
+    "plan_area_tolerance_m2": 2.5,
+    "surface_area_3d_tolerance_m2": 10.0
+  },
+  "path_length_approx_m": 404.195
+}

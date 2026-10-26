@@ -43,10 +43,20 @@ dependencies = [
     "alphashape>=1.3.0",
     "concave_hull>=0.0.7",
     "click>=8.1.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "python-multipart>=0.0.6",
+    "jinja2>=3.1.0",
     "tomli>=1.2.0; python_version<'3.11'",
 ]
 
 [project.optional-dependencies]
+web = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "python-multipart>=0.0.6",
+    "jinja2>=3.1.0",
+]
 dev = [
     "pytest>=7.2.0",
     "pytest-cov>=4.0.0",
@@ -79,7 +89,14 @@ Repository = "https://github.com/DavGarcia/topoconvert.git"
 topoconvert = "topoconvert.cli:main"
 
 [tool.setuptools]
-packages = ["topoconvert", "topoconvert.commands", "topoconvert.core", "topoconvert.utils"]
+packages = [
+    "topoconvert",
+    "topoconvert.commands",
+    "topoconvert.core",
+    "topoconvert.utils",
+    "survey_core",
+    "survey_web",
+]
 
 [tool.black]
 line-length = 88
