@@ -1,4 +1,4 @@
-"""Step 7 (`metrics.py`): Engineering surface metrics, prism volumes, and longitudinal profile."""
+"""Step 7 (`metrics.py`): Engineering surface metrics, prism volumes, per-layer breakdown, and longitudinal profile."""
 
 from __future__ import annotations
 
@@ -14,6 +14,19 @@ from survey_core.io import build_viewer_payload_from_state
 from survey_core.models import SurveyState
 
 
+def _polyline_length_2d(pts: list[tuple[float, float]] | list[list[float]]) -> float:
+    """Compute 2D polyline length in meters."""
+    if len(pts) < 2:
+        return 0.0
+    total = 0.0
+    for i in range(len(pts) - 1):
+        total += math.hypot(
+            float(pts[i + 1][0]) - float(pts[i][0]),
+            float(pts[i + 1][1]) - float(pts[i][1]),
+        )
+    return total
+
+
 def _compute_longitudinal_profile(
     verts_xyz: np.ndarray,
     origin_e0: float,
@@ -23,7 +36,7 @@ def _compute_longitudinal_profile(
 ) -> dict[str, Any]:
     """Compute longitudinal profile along the principal axis / corridor centerline of the survey."""
     if len(verts_xyz) < 2:
-        return {"stations": [], "path_length_m": 0.0}
+        return {"stations": [], "path_length_m": 0.0, "straight_span_m": 0.0}
 
     xy = verts_xyz[:, :2]
     z_global = verts_xyz[:, 2] + origin_z0
@@ -104,6 +117,173 @@ def _compute_longitudinal_profile(
             for st in stations
         ],
     }
+
+
+def _compute_code_and_layer_breakdown(
+    state: SurveyState,
+    verts: np.ndarray,
+    filt_tris: np.ndarray,
+    filt_plan_areas: np.ndarray,
+    filt_3d_areas: np.ndarray,
+    prism_vols: np.ndarray,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Compute per-code (survey layer) volume/area breakdown and CAD layer summary."""
+    active_pts = state.active_points or state.cleaned_points or state.raw_points
+    origin_z0 = state.origin.z0
+
+    # Map each vertex index to its survey code (vertices 0..len(active_pts)-1 correspond to active_pts;
+    # any densified breakline vertices inherit the nearest/breakline code)
+    n_verts = len(verts)
+    vert_codes: list[str] = []
+    default_code = active_pts[0].code if active_pts else "DEFAULT"
+    for vi in range(n_verts):
+        if vi < len(active_pts):
+            vert_codes.append(active_pts[vi].code)
+        else:
+            vert_codes.append(default_code)
+
+    # Accumulate 1/3 of each triangle's plan area, 3D area, cut, fill, and net volume to each of its 3 vertex codes
+    code_plan_area: dict[str, float] = {}
+    code_3d_area: dict[str, float] = {}
+    code_vol_net: dict[str, float] = {}
+    code_vol_cut: dict[str, float] = {}
+    code_vol_fill: dict[str, float] = {}
+    code_tri_touch: dict[str, int] = {}
+
+    for ti in range(len(filt_tris)):
+        t = filt_tris[ti]
+        pa_third = float(filt_plan_areas[ti]) / 3.0
+        a3_third = float(filt_3d_areas[ti]) / 3.0
+        vol_val = float(prism_vols[ti])
+        vn_third = vol_val / 3.0
+        vc_third = (vol_val / 3.0) if vol_val > 0.0 else 0.0
+        vf_third = (abs(vol_val) / 3.0) if vol_val < 0.0 else 0.0
+
+        touched_codes_in_tri: set[str] = set()
+        for corner in range(3):
+            v_idx = int(t[corner])
+            c_name = vert_codes[v_idx] if 0 <= v_idx < n_verts else default_code
+            code_plan_area[c_name] = code_plan_area.get(c_name, 0.0) + pa_third
+            code_3d_area[c_name] = code_3d_area.get(c_name, 0.0) + a3_third
+            code_vol_net[c_name] = code_vol_net.get(c_name, 0.0) + vn_third
+            code_vol_cut[c_name] = code_vol_cut.get(c_name, 0.0) + vc_third
+            code_vol_fill[c_name] = code_vol_fill.get(c_name, 0.0) + vf_third
+            touched_codes_in_tri.add(c_name)
+
+        for c_name in touched_codes_in_tri:
+            code_tri_touch[c_name] = code_tri_touch.get(c_name, 0) + 1
+
+    # Group point elevations by code
+    pts_by_code: dict[str, list[float]] = {}
+    for p in state.cleaned_points or state.raw_points:
+        pts_by_code.setdefault(p.code, []).append(p.z_local + origin_z0)
+
+    code_breakdown: list[dict[str, Any]] = []
+    all_codes = list(state.code_configs.keys()) or list(pts_by_code.keys())
+    for code in all_codes:
+        cfg = state.code_configs.get(code)
+        zs = pts_by_code.get(code, [])
+        z_min_c = round(min(zs), 3) if zs else 0.0
+        z_max_c = round(max(zs), 3) if zs else 0.0
+        z_mean_c = round(sum(zs) / len(zs), 3) if zs else 0.0
+        safe_code = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in code)
+        code_breakdown.append(
+            {
+                "code": code,
+                "dxf_layer": f"CODE_{safe_code}",
+                "role": cfg.role if cfg else "point",
+                "color": cfg.color if cfg else "#38bdf8",
+                "point_count": len(zs),
+                "triangle_count": int(code_tri_touch.get(code, 0)),
+                "plan_area_m2": round(code_plan_area.get(code, 0.0), 2),
+                "surface_area_3d_m2": round(code_3d_area.get(code, 0.0), 2),
+                "volume_net_m3": round(code_vol_net.get(code, 0.0), 2),
+                "volume_cut_m3": round(code_vol_cut.get(code, 0.0), 2),
+                "volume_fill_m3": round(code_vol_fill.get(code, 0.0), 2),
+                "z_min": z_min_c,
+                "z_mean": z_mean_c,
+                "z_max": z_max_c,
+            }
+        )
+
+    # Compute CAD layer summary
+    major_contours = [c for c in state.contours if c.is_major]
+    minor_contours = [c for c in state.contours if not c.is_major]
+    major_len = sum(_polyline_length_2d(c.points_local) for c in major_contours)
+    minor_len = sum(_polyline_length_2d(c.points_local) for c in minor_contours)
+    bl_len = sum(
+        _polyline_length_2d(bl.get("coords", [])) for bl in state.breaklines_local
+    )
+    boundary_loc = state.boundary_polygon_local or state.boundary_codes_polygon_local
+    bnd_len = _polyline_length_2d(boundary_loc) if boundary_loc else 0.0
+
+    layer_breakdown: list[dict[str, Any]] = [
+        {
+            "layer": "POINTS",
+            "title_fa": "نقاط برداشت (POINTS)",
+            "entity_type": "POINT",
+            "count": len(active_pts),
+            "length_m": 0.0,
+            "area_m2": 0.0,
+            "volume_m3": 0.0,
+        },
+        {
+            "layer": "PT_NO / PT_ELEV",
+            "title_fa": "برچسب شماره و کد ارتفاعی نقاط",
+            "entity_type": "TEXT",
+            "count": len(active_pts) * 2,
+            "length_m": 0.0,
+            "area_m2": 0.0,
+            "volume_m3": 0.0,
+        },
+        {
+            "layer": "TIN",
+            "title_fa": "شبکه مثلثی سطح (TIN 3DFACE)",
+            "entity_type": "3DFACE",
+            "count": len(filt_tris),
+            "length_m": 0.0,
+            "area_m2": round(float(np.sum(filt_plan_areas)), 2),
+            "volume_m3": round(float(np.sum(prism_vols)), 2),
+        },
+        {
+            "layer": "CONTOUR_MAJOR",
+            "title_fa": "منحنی‌های میزان اصلی (Major)",
+            "entity_type": "POLYLINE3D",
+            "count": len(major_contours),
+            "length_m": round(major_len, 1),
+            "area_m2": 0.0,
+            "volume_m3": 0.0,
+        },
+        {
+            "layer": "CONTOUR_MINOR",
+            "title_fa": "منحنی‌های میزان فرعی (Minor)",
+            "entity_type": "POLYLINE3D",
+            "count": len(minor_contours),
+            "length_m": round(minor_len, 1),
+            "area_m2": 0.0,
+            "volume_m3": 0.0,
+        },
+        {
+            "layer": "BREAKLINES",
+            "title_fa": "خطوط شکست (Breaklines)",
+            "entity_type": "POLYLINE3D",
+            "count": len(state.breaklines_local),
+            "length_m": round(bl_len, 1),
+            "area_m2": 0.0,
+            "volume_m3": 0.0,
+        },
+        {
+            "layer": "BOUNDARY",
+            "title_fa": "مرز محدوده (Boundary)",
+            "entity_type": "POLYLINE3D",
+            "count": 1 if boundary_loc and len(boundary_loc) >= 3 else 0,
+            "length_m": round(bnd_len, 1),
+            "area_m2": round(float(np.sum(filt_plan_areas)), 2),
+            "volume_m3": 0.0,
+        },
+    ]
+
+    return (code_breakdown, layer_breakdown)
 
 
 def run(
@@ -188,6 +368,10 @@ def run(
         verts, state.origin.e0, state.origin.n0, state.origin.z0
     )
 
+    code_breakdown, layer_breakdown = _compute_code_and_layer_breakdown(
+        state, verts, filt_tris, filt_plan_areas, filt_3d_areas, prism_vols
+    )
+
     # Physical interpretation note explaining unfiltered vs filtered narrow-strip triangulation
     area_ratio = unfiltered_plan_area / max(filtered_plan_area, 1e-6)
     strip_explanation = (
@@ -235,6 +419,8 @@ def run(
         "path_length_m": profile_data["path_length_m"],
         "straight_span_m": profile_data["straight_span_m"],
         "contour_count": len(state.contours),
+        "code_breakdown": code_breakdown,
+        "layer_breakdown": layer_breakdown,
         "strip_geometry_explanation": strip_explanation,
         "area_inflation_factor_unfiltered": round(area_ratio, 2),
     }

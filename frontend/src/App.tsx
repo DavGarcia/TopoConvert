@@ -1167,6 +1167,48 @@ export const App: React.FC = () => {
                         </strong>
                       </div>
                     </div>
+
+                    {Array.isArray(s7Stats.code_breakdown) &&
+                      s7Stats.code_breakdown.length > 0 && (
+                        <div className="table-scroll-box">
+                          <div className="stats-card-title" style={{ marginBottom: 6 }}>
+                            تفکیک مساحت و احجام بر اساس لایه‌ها و کدهای برداشت
+                          </div>
+                          <table className="data-table">
+                            <thead>
+                              <tr>
+                                <th>کد (لایه DXF)</th>
+                                <th>تعداد</th>
+                                <th>مساحت ۲بعدی (m²)</th>
+                                <th>مساحت ۳بعدی (m²)</th>
+                                <th>حجم خالص (m³)</th>
+                                <th>تراز میانگین (m)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {s7Stats.code_breakdown.map((cb: any) => (
+                                <tr key={cb.code}>
+                                  <td>
+                                    <span
+                                      className="code-dot"
+                                      style={{ backgroundColor: cb.color || "#38bdf8" }}
+                                    />
+                                    <strong>{cb.code}</strong>{" "}
+                                    <small style={{ opacity: 0.75 }}>({cb.dxf_layer})</small>
+                                  </td>
+                                  <td>{formatInt(cb.point_count, persianDigits)}</td>
+                                  <td>{formatNum(cb.plan_area_m2, 2, persianDigits)}</td>
+                                  <td>{formatNum(cb.surface_area_3d_m2, 2, persianDigits)}</td>
+                                  <td className="text-emerald">
+                                    <strong>{formatNum(cb.volume_net_m3, 2, persianDigits)}</strong>
+                                  </td>
+                                  <td>{formatNum(cb.z_mean, 3, persianDigits)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                   </div>
                 )}
 

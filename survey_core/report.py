@@ -288,8 +288,35 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
       display: block;
       border-radius: 8px;
     }
+    .map-with-side-box {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .side-spec-card {
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.82rem;
+    }
+    .side-spec-title {
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+    }
+    .side-spec-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.16);
+    }
     @media (max-width: 768px) {
-      .metrics-grid {
+      .metrics-grid, .map-with-side-box {
         grid-template-columns: 1fr;
       }
       .header-card {
@@ -384,8 +411,31 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
 
     {% if map_svg %}
     <div class="section-card">
-      <h2>۲. نقشه پلان شبکه مثلثی (TIN) و منحنی‌های میزان</h2>
-      {{ map_svg | safe }}
+      <h2>۲. نقشه پلان شبکه مثلثی (TIN) و کادر مشخصات احجام و لایه‌ها در کنار نقشه</h2>
+      <div class="map-with-side-box">
+        <div>
+          {{ map_svg | safe }}
+        </div>
+        <div class="side-spec-card">
+          <div class="side-spec-title">مشخصات احجام و سطوح نقشه</div>
+          <div class="side-spec-row"><span>مساحت افقی (۲بعدی):</span><strong>{{ plan_area }} m²</strong></div>
+          <div class="side-spec-row"><span>مساحت رویه (۳بعدی):</span><strong>{{ surf_area_3d }} m²</strong></div>
+          <div class="side-spec-row"><span>تراز مبنای حجم:</span><strong>{{ ref_elev }} m</strong></div>
+          <div class="side-spec-row"><span>حجم منشوری خالص:</span><strong>{{ prism_vol }} m³</strong></div>
+          <div class="side-spec-row"><span>حجم خاکبرداری (+):</span><strong>{{ cut_vol }} m³</strong></div>
+          <div class="side-spec-row"><span>حجم خاکریزی (-):</span><strong>{{ fill_vol }} m³</strong></div>
+          <div class="side-spec-row"><span>تراز کمینه / بیشینه:</span><strong>{{ z_min }} / {{ z_max }} m</strong></div>
+          <div class="side-spec-row"><span>شیب میانگین:</span><strong>{{ slope_mean_deg }}° ({{ slope_mean_pct }}٪)</strong></div>
+
+          <div class="side-spec-title" style="margin-top:10px;">تفکیک احجام بر اساس لایه / کد</div>
+          {% for c in codes %}
+          <div class="side-spec-row">
+            <span><span style="display:inline-block;width:10px;height:10px;background:{{ c.color }};border-radius:2px;"></span> کد <strong>{{ c.code }}</strong> ({{ c.count_fa }} نقطه):</span>
+            <strong>{{ c.area_2d_fa }} m² | {{ c.vol_net_fa }} m³</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
     {% endif %}
 
@@ -397,30 +447,68 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
     {% endif %}
 
     <div class="section-card">
-      <h2>۴. جدول کدهای برداشت و نقش خطوط</h2>
+      <h2>۴. جدول تفکیک مساحت و احجام بر اساس لایه‌ها و کدهای برداشت</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>کد برداشت</th>
+              <th>کد برداشت (لایه CAD)</th>
+              <th>نقش لایه</th>
               <th>تعداد نقاط</th>
-              <th>نقش انتخاب‌شده</th>
-              <th>رنگ لایه</th>
+              <th>مساحت افقی (m²)</th>
+              <th>مساحت ۳بعدی (m²)</th>
+              <th>حجم منشوری خالص (m³)</th>
+              <th>خاکبرداری / خاکریزی (m³)</th>
+              <th>تراز میانگین (m)</th>
             </tr>
           </thead>
           <tbody>
             {% for c in codes %}
             <tr>
-              <td><strong>{{ c.code }}</strong></td>
-              <td>{{ c.count_fa }}</td>
+              <td><span style="display:inline-block;width:12px;height:12px;background:{{ c.color }};border-radius:3px;vertical-align:middle;"></span> <strong>{{ c.code }}</strong> ({{ c.dxf_layer }})</td>
               <td>{{ c.role_fa }}</td>
-              <td><span style="display:inline-block;width:14px;height:14px;background:{{ c.color }};border-radius:3px;vertical-align:middle;"></span> {{ c.color }}</td>
+              <td>{{ c.count_fa }}</td>
+              <td>{{ c.area_2d_fa }}</td>
+              <td>{{ c.area_3d_fa }}</td>
+              <td><strong>{{ c.vol_net_fa }}</strong></td>
+              <td>+{{ c.vol_cut_fa }} / -{{ c.vol_fill_fa }}</td>
+              <td>{{ c.z_mean_fa }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+
+    {% if layers_rows %}
+    <div class="section-card">
+      <h2>۵. جدول لایه‌های استاندارد خروجی نقشه (CAD Layers)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>نام لایه در DXF</th>
+              <th>شرح مهندسی لایه</th>
+              <th>نوع موضوع (Entity)</th>
+              <th>تعداد اجزا</th>
+              <th>طول / مساحت / حجم</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lb in layers_rows %}
+            <tr>
+              <td><strong>{{ lb.layer }}</strong></td>
+              <td>{{ lb.title_fa }}</td>
+              <td>{{ lb.entity_type }}</td>
+              <td>{{ lb.count_fa }}</td>
+              <td>{{ lb.summary_fa }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </body>
 </html>
@@ -445,15 +533,47 @@ def render_html_report(state: SurveyState, shift_to_local_origin: bool = False) 
         state, shift_to_local_origin=shift_to_local_origin
     )
 
-    codes_rows = [
-        {
-            "code": cfg.code,
-            "count_fa": to_fa_num(cfg.count, 0),
-            "role_fa": ROLE_LABELS_FA.get(cfg.role, cfg.role),
-            "color": cfg.color,
-        }
-        for cfg in state.code_configs.values()
-    ]
+    code_breakdown = m.get("code_breakdown") or []
+    cb_map = {str(item["code"]): item for item in code_breakdown}
+
+    codes_rows = []
+    for cfg in state.code_configs.values():
+        cb = cb_map.get(cfg.code, {})
+        safe_code = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in cfg.code)
+        codes_rows.append(
+            {
+                "code": cfg.code,
+                "dxf_layer": cb.get("dxf_layer", f"CODE_{safe_code}"),
+                "count_fa": to_fa_num(cfg.count, 0),
+                "role_fa": ROLE_LABELS_FA.get(cfg.role, cfg.role),
+                "color": cfg.color,
+                "area_2d_fa": to_fa_num(cb.get("plan_area_m2", 0.0), 2),
+                "area_3d_fa": to_fa_num(cb.get("surface_area_3d_m2", 0.0), 2),
+                "vol_net_fa": to_fa_num(cb.get("volume_net_m3", 0.0), 2),
+                "vol_cut_fa": to_fa_num(cb.get("volume_cut_m3", 0.0), 2),
+                "vol_fill_fa": to_fa_num(cb.get("volume_fill_m3", 0.0), 2),
+                "z_mean_fa": to_fa_num(cb.get("z_mean", state.origin.z0), 3),
+            }
+        )
+
+    layers_rows = []
+    for lb in m.get("layer_breakdown") or []:
+        parts = []
+        if float(lb.get("length_m", 0.0)) > 0:
+            parts.append(f"طول: {to_fa_num(lb['length_m'], 1)}m")
+        if float(lb.get("area_m2", 0.0)) > 0:
+            parts.append(f"مساحت: {to_fa_num(lb['area_m2'], 2)}m²")
+        if float(lb.get("volume_m3", 0.0)) > 0:
+            parts.append(f"حجم: {to_fa_num(lb['volume_m3'], 2)}m³")
+        layers_rows.append(
+            {
+                "layer": lb["layer"],
+                "title_fa": lb["title_fa"],
+                "entity_type": lb["entity_type"],
+                "count_fa": to_fa_num(lb["count"], 0),
+                "summary_fa": " | ".join(parts) if parts else "—",
+            }
+        )
 
     env = Environment(loader=BaseLoader(), autoescape=True)
     tmpl = env.from_string(REPORT_TEMPLATE)
@@ -476,6 +596,8 @@ def render_html_report(state: SurveyState, shift_to_local_origin: bool = False) 
         unfilt_plan_area=to_fa_num(m.get("unfiltered_planimetric_area_m2", 0.0), 2),
         ref_elev=to_fa_num(m.get("reference_elevation_m", state.origin.z0), 3),
         prism_vol=to_fa_num(m.get("prism_volume_net_m3", 0.0), 2),
+        cut_vol=to_fa_num(m.get("prism_volume_cut_m3", 0.0), 2),
+        fill_vol=to_fa_num(m.get("prism_volume_fill_m3", 0.0), 2),
         z_min=to_fa_num(elev.get("min", 0.0), 3),
         z_mean=to_fa_num(elev.get("mean", 0.0), 3),
         z_max=to_fa_num(elev.get("max", 0.0), 3),
@@ -488,4 +610,5 @@ def render_html_report(state: SurveyState, shift_to_local_origin: bool = False) 
         map_svg=_build_map_svg(state),
         profile_svg=_build_profile_svg(state),
         codes=codes_rows,
+        layers_rows=layers_rows,
     )

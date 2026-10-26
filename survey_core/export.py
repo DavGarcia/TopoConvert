@@ -23,7 +23,10 @@ REQUIRED_DXF_LAYERS = [
     ("CONTOUR_MINOR", 9),  # Light Gray
     ("BREAKLINES", 30),  # Orange
     ("BOUNDARY", 5),  # Blue
+    ("INFO_TABLE", 7),  # White/Black CAD specification & volume table
 ]
+
+CODE_ACI_PALETTE = [140, 30, 94, 200, 40, 170, 50, 110]
 
 
 def get_dxf_local_origin_offset(
@@ -54,10 +57,215 @@ def get_dxf_local_origin_offset(
     return (offset_x, offset_y)
 
 
+def _draw_side_spec_and_layer_table(
+    doc: ezdxf.document.Drawing,
+    msp: Any,
+    state: SurveyState,
+    map_min_x: float,
+    map_max_x: float,
+    map_min_y: float,
+    map_max_y: float,
+    z_plane: float,
+    max_dim: float,
+    offset_x: float,
+    offset_y: float,
+    shift_to_local_origin: bool,
+) -> None:
+    """Draw a CAD specification, volume & per-layer/per-code breakdown sheet right beside the map."""
+    m = state.metrics or {}
+    code_breakdown: list[dict[str, Any]] = m.get("code_breakdown") or []
+    layer_breakdown: list[dict[str, Any]] = m.get("layer_breakdown") or []
+
+    # Scale table dimensions proportionally to the map's largest dimension
+    margin_x = max(max_dim * 0.08, 4.0)
+    box_w = max(max_dim * 0.58, 36.0)
+    row_h = max(max_dim * 0.018, 1.1)
+    title_th = max(round(row_h * 0.52, 4), 0.18)
+    sec_th = max(round(row_h * 0.44, 4), 0.15)
+    body_th = max(round(row_h * 0.36, 4), 0.12)
+    pad_x = box_w * 0.03
+
+    x0 = map_max_x + margin_x
+    x1 = x0 + box_w
+    y_top = map_max_y
+    cur_y = y_top
+
+    def add_hline(y_val: float, layer: str = "INFO_TABLE") -> None:
+        msp.add_line(
+            (x0, y_val, z_plane), (x1, y_val, z_plane), dxfattribs={"layer": layer}
+        )
+
+    def add_row_kv(label_txt: str, val_txt: str) -> None:
+        nonlocal cur_y
+        y_mid = cur_y - row_h * 0.68
+        t_lbl = msp.add_text(
+            label_txt,
+            dxfattribs={"layer": "INFO_TABLE", "height": body_th},
+        )
+        t_lbl.set_placement(
+            (x0 + pad_x, y_mid, z_plane), align=TextEntityAlignment.LEFT
+        )
+
+        t_val = msp.add_text(
+            val_txt,
+            dxfattribs={"layer": "INFO_TABLE", "height": body_th},
+        )
+        t_val.set_placement(
+            (x1 - pad_x, y_mid, z_plane), align=TextEntityAlignment.RIGHT
+        )
+        cur_y -= row_h
+        add_hline(cur_y)
+
+    def add_section_header(title_str: str) -> None:
+        nonlocal cur_y
+        add_hline(cur_y)
+        y_mid = cur_y - row_h * 0.72
+        t_sec = msp.add_text(
+            title_str,
+            dxfattribs={"layer": "INFO_TABLE", "height": sec_th},
+        )
+        t_sec.set_placement(
+            ((x0 + x1) * 0.5, y_mid, z_plane), align=TextEntityAlignment.CENTER
+        )
+        cur_y -= row_h * 1.1
+        add_hline(cur_y)
+
+    # 1. Title Banner
+    add_hline(cur_y)
+    t_main = msp.add_text(
+        "TOPOCONVERT - SURVEY, VOLUME & LAYER SPECIFICATIONS",
+        dxfattribs={"layer": "INFO_TABLE", "height": title_th},
+    )
+    t_main.set_placement(
+        ((x0 + x1) * 0.5, cur_y - row_h * 0.85, z_plane),
+        align=TextEntityAlignment.CENTER,
+    )
+    cur_y -= row_h * 1.3
+    add_hline(cur_y)
+
+    # 2. General & Volume Specifications
+    add_section_header("1. VOLUME & SURFACE SPECIFICATIONS (مشخصات احجام و سطوح)")
+    elev = m.get("elevation_m") or {}
+    slope = m.get("slope") or {}
+    active_cnt = m.get(
+        "point_count_active",
+        len(state.active_points or state.cleaned_points or state.raw_points),
+    )
+    tri_cnt = m.get("triangle_count_filtered", len(state.filtered_triangles))
+    plan_area = float(m.get("planimetric_area_m2", 0.0))
+    surf_3d = float(m.get("surface_area_3d_m2", 0.0))
+    unfilt_area = float(m.get("unfiltered_planimetric_area_m2", 0.0))
+    ref_z = float(m.get("reference_elevation_m", state.origin.z0))
+    vol_net = float(m.get("prism_volume_net_m3", 0.0))
+    vol_cut = float(m.get("prism_volume_cut_m3", 0.0))
+    vol_fill = float(m.get("prism_volume_fill_m3", 0.0))
+    path_len = float(m.get("path_length_m", 0.0))
+
+    add_row_kv("Project / File:", str(state.filename))
+    add_row_kv(
+        "Coordinate System (CRS):",
+        f"{state.crs} ({'Local Shifted' if shift_to_local_origin else 'Global UTM'})",
+    )
+    add_row_kv(
+        "Applied XY Offset (dX, dY):",
+        f"dX = -{int(offset_x):,} m , dY = -{int(offset_y):,} m (Z unchanged)",
+    )
+    add_row_kv(
+        "Active Points / TIN Triangles:",
+        f"{active_cnt:,} pts / {tri_cnt:,} tris",
+    )
+    add_row_kv(
+        "2D Planimetric Area (Filtered):",
+        f"{plan_area:,.2f} m2 (Unfiltered: {unfilt_area:,.2f} m2)",
+    )
+    add_row_kv("3D Surface Area (Filtered):", f"{surf_3d:,.2f} m2")
+    add_row_kv("Reference Elevation (Z_ref):", f"{ref_z:,.3f} m")
+    add_row_kv("Net Prism Volume:", f"{vol_net:,.2f} m3")
+    add_row_kv(
+        "Cut Volume (+) / Fill Volume (-):",
+        f"Cut: {vol_cut:,.2f} m3 | Fill: {vol_fill:,.2f} m3",
+    )
+    add_row_kv(
+        "Elevation Min / Mean / Max:",
+        f"{float(elev.get('min', z_plane)):,.3f} / {float(elev.get('mean', z_plane)):,.3f} / {float(elev.get('max', z_plane)):,.3f} m",
+    )
+    add_row_kv(
+        "Slope Mean / Max:",
+        f"{float(slope.get('mean_deg', 0.0)):.2f} deg ({float(slope.get('mean_pct', 0.0)):.1f}%) / {float(slope.get('max_deg', 0.0)):.1f} deg",
+    )
+    add_row_kv("Corridor Path Length:", f"{path_len:,.2f} m")
+
+    # 3. Breakdown by Survey Code / Layer
+    if code_breakdown:
+        add_section_header(
+            "2. VOLUME & AREA BY SURVEY CODE / LAYER (تفکیک بر اساس لایه و کد)"
+        )
+        add_row_kv(
+            "CODE (DXF LAYER) | ROLE | PTS",
+            "2D AREA (m2) | 3D AREA (m2) | NET VOL (m3) | Z MEAN",
+        )
+        for idx, cb in enumerate(code_breakdown):
+            c_layer = str(cb["dxf_layer"])
+            aci_col = CODE_ACI_PALETTE[idx % len(CODE_ACI_PALETTE)]
+            if c_layer not in doc.layers:
+                doc.layers.add(c_layer, color=aci_col)
+
+            # Draw colored swatch bar on the code's layer inside the row
+            y_swatch = cur_y - row_h * 0.5
+            msp.add_line(
+                (x0 + pad_x * 0.35, y_swatch, z_plane),
+                (x0 + pad_x * 0.9, y_swatch, z_plane),
+                dxfattribs={"layer": c_layer},
+            )
+            lhs = f"{cb['code']} ({c_layer}) | {cb['role']} | {cb['point_count']} pts"
+            rhs = (
+                f"{float(cb['plan_area_m2']):,.2f} m2 | "
+                f"{float(cb['surface_area_3d_m2']):,.2f} m2 | "
+                f"{float(cb['volume_net_m3']):,.2f} m3 | "
+                f"Z={float(cb['z_mean']):.2f}m"
+            )
+            add_row_kv(lhs, rhs)
+
+    # 4. CAD Layer Legend & Entity Breakdown
+    if layer_breakdown:
+        add_section_header("3. CAD LAYER BREAKDOWN (راهنمای لایه‌های نقشه)")
+        add_row_kv("LAYER NAME (ENTITY TYPE)", "COUNT | LENGTH / AREA / VOLUME")
+        for lb in layer_breakdown:
+            lname = str(lb["layer"])
+            sample_layer = "PT_NO" if "PT_NO" in lname else lname
+            y_swatch = cur_y - row_h * 0.5
+            if sample_layer in doc.layers:
+                msp.add_line(
+                    (x0 + pad_x * 0.35, y_swatch, z_plane),
+                    (x0 + pad_x * 0.9, y_swatch, z_plane),
+                    dxfattribs={"layer": sample_layer},
+                )
+            lhs = f"{lname} ({lb['entity_type']})"
+            details: list[str] = [f"{int(lb['count']):,} items"]
+            if float(lb.get("length_m", 0.0)) > 0:
+                details.append(f"L={float(lb['length_m']):,.1f}m")
+            if float(lb.get("area_m2", 0.0)) > 0:
+                details.append(f"A={float(lb['area_m2']):,.2f}m2")
+            if float(lb.get("volume_m3", 0.0)) > 0:
+                details.append(f"V={float(lb['volume_m3']):,.2f}m3")
+            add_row_kv(lhs, " | ".join(details))
+
+    # Outer border rectangle enclosing the entire specification sheet
+    y_bot = cur_y
+    border_pts = [
+        (x0, y_top, z_plane),
+        (x1, y_top, z_plane),
+        (x1, y_bot, z_plane),
+        (x0, y_bot, z_plane),
+        (x0, y_top, z_plane),
+    ]
+    msp.add_polyline3d(border_pts, dxfattribs={"layer": "INFO_TABLE"})
+
+
 def build_dxf_document(
     state: SurveyState, shift_to_local_origin: bool = False
 ) -> ezdxf.document.Drawing:
-    """Create a CAD-ready DXF R2010 document with valid extents, active VPORT, and visible points."""
+    """Create a CAD-ready DXF R2010 document with valid extents, active VPORT, visible points, and side spec table."""
     doc = ezdxf.new("R2010")
     doc.header["$INSUNITS"] = 6  # Meters
     doc.header["$PDMODE"] = 35
@@ -66,6 +274,13 @@ def build_dxf_document(
     for layer_name, color_aci in REQUIRED_DXF_LAYERS:
         if layer_name not in doc.layers:
             doc.layers.add(layer_name, color=color_aci)
+
+    # Also register per-code layers (`CODE_<CODE>`) so CAD users have code-separated layers
+    for idx, code_key in enumerate(state.code_configs.keys()):
+        safe_code = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in code_key)
+        c_layer = f"CODE_{safe_code}"
+        if c_layer not in doc.layers:
+            doc.layers.add(c_layer, color=CODE_ACI_PALETTE[idx % len(CODE_ACI_PALETTE)])
 
     msp = doc.modelspace()
     origin = state.origin
@@ -83,12 +298,19 @@ def build_dxf_document(
 
     # Compute map largest dimension first so TEXT height is ~0.15% of largest dimension
     if active_pts:
-        xs = [p.x_local for p in active_pts]
-        ys = [p.y_local for p in active_pts]
-        span_x = max(xs) - min(xs)
-        span_y = max(ys) - min(ys)
+        xs_dxf = [to_dxf_xyz(p.x_local, p.y_local, p.z_local)[0] for p in active_pts]
+        ys_dxf = [to_dxf_xyz(p.x_local, p.y_local, p.z_local)[1] for p in active_pts]
+        zs_dxf = [to_dxf_xyz(p.x_local, p.y_local, p.z_local)[2] for p in active_pts]
+        map_min_x, map_max_x = min(xs_dxf), max(xs_dxf)
+        map_min_y, map_max_y = min(ys_dxf), max(ys_dxf)
+        z_plane = min(zs_dxf)
+        span_x = map_max_x - map_min_x
+        span_y = map_max_y - map_min_y
         max_dim = max(span_x, span_y, 1.0)
     else:
+        map_min_x, map_max_x = 0.0, 100.0
+        map_min_y, map_max_y = 0.0, 100.0
+        z_plane = float(origin.z0)
         max_dim = 100.0
 
     text_height = max(round(max_dim * 0.0015, 4), 0.05)
@@ -184,6 +406,23 @@ def build_dxf_document(
     if boundary_loc and len(boundary_loc) >= 3:
         bnd_pts_3d = [to_dxf_xyz(float(bx), float(by), 0.0) for bx, by in boundary_loc]
         msp.add_polyline3d(bnd_pts_3d, dxfattribs={"layer": "BOUNDARY"})
+
+    # 6. Side Specification, Volume & Layer Breakdown Table right next to the map
+    if active_pts:
+        _draw_side_spec_and_layer_table(
+            doc=doc,
+            msp=msp,
+            state=state,
+            map_min_x=map_min_x,
+            map_max_x=map_max_x,
+            map_min_y=map_min_y,
+            map_max_y=map_max_y,
+            z_plane=z_plane,
+            max_dim=max_dim,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            shift_to_local_origin=shift_to_local_origin,
+        )
 
     # Calculate true bounding box extents across all modelspace entities before saving
     ext = bbox.extents(msp)

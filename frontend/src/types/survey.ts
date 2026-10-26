@@ -130,6 +130,7 @@ export interface ViewerPayload {
     };
   } | null;
   profile: ProfileData | null;
+  metrics?: Record<string, any> | null;
 }
 
 export interface SessionResponse {

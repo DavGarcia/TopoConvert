@@ -380,6 +380,7 @@ def build_viewer_payload_from_state(
         "contours": contours_payload,
         "slope_grid": state.slope_grid_data if active_step >= 6 else None,
         "profile": state.profile_data if active_step >= 7 else None,
+        "metrics": state.metrics if active_step >= 7 else None,
     }
 
 

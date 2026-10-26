@@ -96,6 +96,17 @@ class TestGoldenDemoPipeline:
         assert "پوسته محدب دلونی" in final_stats["strip_geometry_explanation"]
         assert viewer_payload["active_step"] == 7
 
+        # Verify code_breakdown and layer_breakdown
+        cb_list = final_stats["code_breakdown"]
+        assert len(cb_list) == 3
+        assert sum(item["plan_area_m2"] for item in cb_list) == pytest.approx(
+            final_stats["planimetric_area_m2"], abs=0.05
+        )
+        assert sum(item["volume_net_m3"] for item in cb_list) == pytest.approx(
+            final_stats["prism_volume_net_m3"], abs=0.05
+        )
+        assert len(final_stats["layer_breakdown"]) >= 6
+
     def test_demo_dxf_roundtrip_and_audit(self, tmp_path: Path) -> None:
         """Write DXF, run ezdxf audit (0 errors), read back with ezdxf, and compare every XYZ."""
         raw_text = DEMO_PATH.read_text(encoding="utf-8")
@@ -136,6 +147,18 @@ class TestGoldenDemoPipeline:
         assert float(txt_entities[0].dxf.height) == pytest.approx(
             expected_txt_h, rel=1e-2
         )
+
+        # Verify side specification table (INFO_TABLE) and per-code layers (CODE_AF, CODE_J, CODE_END)
+        assert "INFO_TABLE" in doc.layers
+        assert "CODE_AF" in doc.layers
+        assert "CODE_J" in doc.layers
+        assert "CODE_END" in doc.layers
+        info_texts = list(msp.query('TEXT[layer=="INFO_TABLE"]'))
+        assert len(info_texts) >= 20
+        info_str = " ".join(t.dxf.text for t in info_texts)
+        assert "Net Prism Volume:" in info_str
+        assert "688.70 m3" in info_str
+        assert "CODE_AF" in info_str
 
         # Verify shift_to_local_origin=True option (subtracts 721000 from X and 4028000 from Y, keeps Z untouched)
         dxf_local_file = tmp_path / "demo_local_origin.dxf"

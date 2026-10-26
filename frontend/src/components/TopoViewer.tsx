@@ -1138,6 +1138,62 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
         </div>
       )}
 
+      {/* Side Specification & Volume/Layer Breakdown Box beside the map in Step 7 */}
+      {payload && activeStep === 7 && payload.metrics && (
+        <div
+          className="viewer-side-spec-box"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="side-spec-hdr">مشخصات احجام و لایه‌های نقشه</div>
+          <div className="side-spec-kv">
+            <span>مساحت ۲بعدی:</span>
+            <strong className="text-emerald">
+              {formatNum(payload.metrics.planimetric_area_m2, 2, persianDigits)} m²
+            </strong>
+          </div>
+          <div className="side-spec-kv">
+            <span>مساحت ۳بعدی:</span>
+            <strong className="text-sky">
+              {formatNum(payload.metrics.surface_area_3d_m2, 2, persianDigits)} m²
+            </strong>
+          </div>
+          <div className="side-spec-kv">
+            <span>حجم منشوری خالص:</span>
+            <strong>
+              {formatNum(payload.metrics.prism_volume_net_m3, 2, persianDigits)} m³
+            </strong>
+          </div>
+          <div className="side-spec-kv">
+            <span>خاکبرداری / خاکریزی:</span>
+            <strong>
+              +{formatNum(payload.metrics.prism_volume_cut_m3, 1, persianDigits)} / −
+              {formatNum(payload.metrics.prism_volume_fill_m3, 1, persianDigits)} m³
+            </strong>
+          </div>
+          {Array.isArray(payload.metrics.code_breakdown) &&
+            payload.metrics.code_breakdown.length > 0 && (
+              <>
+                <div className="side-spec-subhdr">تفکیک بر اساس لایه / کد:</div>
+                {payload.metrics.code_breakdown.map((cb: any) => (
+                  <div key={cb.code} className="side-spec-kv">
+                    <span>
+                      <i
+                        className="code-dot"
+                        style={{ backgroundColor: cb.color || "#38bdf8" }}
+                      />
+                      {cb.code} ({formatInt(cb.point_count, persianDigits)}):
+                    </span>
+                    <strong>
+                      {formatNum(cb.plan_area_m2, 1, persianDigits)}m² |{" "}
+                      {formatNum(cb.volume_net_m3, 1, persianDigits)}m³
+                    </strong>
+                  </div>
+                ))}
+              </>
+            )}
+        </div>
+      )}
+
       {/* Inspection Popover (Point / Triangle / Distance Measure) */}
       {(selectedPoint || selectedTri || measureSummary) && (
         <div

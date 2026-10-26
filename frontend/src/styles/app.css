@@ -953,6 +953,55 @@ input[type="range"] {
   gap: 4px 8px;
 }
 
+.viewer-side-spec-box {
+  display: none;
+  position: absolute;
+  left: 10px;
+  bottom: 84px;
+  width: 245px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-col);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.74rem;
+  z-index: 10;
+  box-shadow: var(--shadow);
+}
+
+.side-spec-hdr {
+  font-weight: 700;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border-col);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+}
+
+.side-spec-subhdr {
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 6px 0 3px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border-col);
+}
+
+.side-spec-kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.code-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
 /* Landscape Phone Adjustments */
 @media (max-height: 500px) and (max-width: 960px) {
   .wizard-stepper {
@@ -1005,6 +1054,9 @@ input[type="range"] {
   }
   .viewer-hud-bottom {
     bottom: 14px;
+  }
+  .viewer-side-spec-box {
+    display: block;
   }
   .auto-advance-row {
     display: flex;
