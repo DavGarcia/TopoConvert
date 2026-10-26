@@ -400,7 +400,7 @@ export const App: React.FC = () => {
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
             aria-label={theme === "dark" ? fa.header.themeLight : fa.header.themeDark}
           >
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? "روشن" : "تاریک"}
           </button>
           <button
             type="button"
@@ -496,84 +496,6 @@ export const App: React.FC = () => {
             {/* STEP 1: UPLOAD & PARSE SUMMARY */}
             {activeStep === 1 && (
               <div className="step-section">
-                <div
-                  className="upload-dropzone"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => fileInputRef.current?.click()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      fileInputRef.current?.click();
-                    }
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const f = e.dataTransfer.files?.[0];
-                    if (f) handleFileUpload(f);
-                  }}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".txt,.csv,.dat,.xyz"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f);
-                    }}
-                  />
-                  <div className="dropzone-icon">📂</div>
-                  <div className="dropzone-title">{fa.step1.dropzoneTitle}</div>
-                  <div className="dropzone-hint">{fa.step1.dropzoneHint}</div>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn-secondary-accent full-width-btn"
-                  onClick={() => handleLoadDemo(1)}
-                  disabled={loading}
-                >
-                  🚀 {fa.actions.loadDemoPrimary}
-                </button>
-
-                <div className="control-card">
-                  <label className="field-label" htmlFor="crs-select">
-                    {fa.step1.crsLabel}
-                  </label>
-                  <select
-                    id="crs-select"
-                    className="form-select"
-                    value={crsInput}
-                    onChange={(e) => setCrsInput(e.target.value)}
-                  >
-                    <option value="EPSG:32640">EPSG:32640 — WGS 84 / UTM Zone 40N (پیش‌فرض)</option>
-                    <option value="EPSG:32639">EPSG:32639 — WGS 84 / UTM Zone 39N</option>
-                    <option value="EPSG:32638">EPSG:32638 — WGS 84 / UTM Zone 38N</option>
-                    <option value="EPSG:32641">EPSG:32641 — WGS 84 / UTM Zone 41N</option>
-                  </select>
-                  <div className="assumption-note">
-                    ⚠️ {fa.step1.crsAssumedWarning}
-                  </div>
-
-                  <label className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={swapNe}
-                      onChange={(e) => {
-                        setSwapNe(e.target.checked);
-                        if (session) {
-                          runStepOnServer(1, {
-                            crs: crsInput,
-                            swap_ne: e.target.checked
-                          });
-                        }
-                      }}
-                    />
-                    <span>{fa.step1.swapNeLabel}</span>
-                  </label>
-                </div>
-
                 {s1Stats && (
                   <div className="stats-glass-card">
                     <div className="stats-card-title">
@@ -620,6 +542,84 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                <div className="control-card">
+                  <label className="field-label" htmlFor="crs-select">
+                    {fa.step1.crsLabel}
+                  </label>
+                  <select
+                    id="crs-select"
+                    className="form-select"
+                    value={crsInput}
+                    onChange={(e) => setCrsInput(e.target.value)}
+                  >
+                    <option value="EPSG:32640">EPSG:32640 — WGS 84 / UTM Zone 40N (پیش‌فرض)</option>
+                    <option value="EPSG:32639">EPSG:32639 — WGS 84 / UTM Zone 39N</option>
+                    <option value="EPSG:32638">EPSG:32638 — WGS 84 / UTM Zone 38N</option>
+                    <option value="EPSG:32641">EPSG:32641 — WGS 84 / UTM Zone 41N</option>
+                  </select>
+                  <div className="assumption-note">
+                    {fa.step1.crsAssumedWarning}
+                  </div>
+
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={swapNe}
+                      onChange={(e) => {
+                        setSwapNe(e.target.checked);
+                        if (session) {
+                          runStepOnServer(1, {
+                            crs: crsInput,
+                            swap_ne: e.target.checked
+                          });
+                        }
+                      }}
+                    />
+                    <span>{fa.step1.swapNeLabel}</span>
+                  </label>
+                </div>
+
+                <div
+                  className="upload-dropzone"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) handleFileUpload(f);
+                  }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,.csv,.dat,.xyz"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleFileUpload(f);
+                    }}
+                  />
+                  <div className="dropzone-icon">▲</div>
+                  <div className="dropzone-title">{fa.step1.dropzoneTitle}</div>
+                  <div className="dropzone-hint">{fa.step1.dropzoneHint}</div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-secondary-accent full-width-btn"
+                  onClick={() => handleLoadDemo(1)}
+                  disabled={loading}
+                >
+                  {fa.actions.loadDemoPrimary}
+                </button>
               </div>
             )}
 
@@ -737,7 +737,7 @@ export const App: React.FC = () => {
             {activeStep === 3 && (
               <div className="step-section">
                 <div className="assumption-note">
-                  ⚠️ {fa.step3.neverGuessBanner}
+                  {fa.step3.neverGuessBanner}
                 </div>
 
                 <div className="control-card">
@@ -1077,6 +1077,36 @@ export const App: React.FC = () => {
             {/* STEP 7: FINAL METRICS, PROFILE CHART & CAD EXPORTS */}
             {activeStep === 7 && (
               <div className="step-section">
+                {session && (
+                  <div className="export-actions-card">
+                    <div className="field-label">{fa.step7.exportsTitle}</div>
+                    <div className="export-btns-grid">
+                      <a
+                        className="btn-export-primary"
+                        href={`/api/sessions/${session.session_id}/export/dxf`}
+                        download="topoconvert_survey.dxf"
+                      >
+                        {fa.actions.downloadDxf}
+                      </a>
+                      <a
+                        className="btn-export-secondary"
+                        href={`/api/sessions/${session.session_id}/export/csv`}
+                        download="topoconvert_cleaned.csv"
+                      >
+                        {fa.actions.downloadCsv}
+                      </a>
+                      <a
+                        className="btn-export-secondary"
+                        href={`/api/sessions/${session.session_id}/export/report`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {fa.actions.openReport}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 {s7Stats && (
                   <div className="stats-glass-card">
                     <div className="stats-kv-grid">
@@ -1118,17 +1148,6 @@ export const App: React.FC = () => {
                           {formatNum(s7Stats.elevation_m?.max, 2, persianDigits)}m
                         </strong>
                       </div>
-                      <div className="kv-item">
-                        <span>{fa.step7.slopeStats}</span>
-                        <strong>
-                          {formatNum(s7Stats.slope?.mean_deg, 2, persianDigits)}° /{" "}
-                          {formatNum(s7Stats.slope?.max_deg, 1, persianDigits)}°
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="assumption-note">
-                      {toPersianDigits(s7Stats.strip_geometry_explanation || "", persianDigits)}
                     </div>
                   </div>
                 )}
@@ -1141,31 +1160,9 @@ export const App: React.FC = () => {
                   />
                 </div>
 
-                {session && (
-                  <div className="export-actions-card">
-                    <div className="field-label">{fa.step7.exportsTitle}</div>
-                    <a
-                      className="btn-export-primary"
-                      href={`/api/sessions/${session.session_id}/export/dxf`}
-                      download="topoconvert_survey.dxf"
-                    >
-                      📐 {fa.actions.downloadDxf}
-                    </a>
-                    <a
-                      className="btn-export-secondary"
-                      href={`/api/sessions/${session.session_id}/export/csv`}
-                      download="topoconvert_cleaned.csv"
-                    >
-                      📊 {fa.actions.downloadCsv}
-                    </a>
-                    <a
-                      className="btn-export-secondary"
-                      href={`/api/sessions/${session.session_id}/export/report`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      🖨️ {fa.actions.openReport}
-                    </a>
+                {s7Stats?.strip_geometry_explanation && (
+                  <div className="assumption-note">
+                    {toPersianDigits(s7Stats.strip_geometry_explanation, persianDigits)}
                   </div>
                 )}
               </div>

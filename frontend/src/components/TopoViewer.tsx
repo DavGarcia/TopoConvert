@@ -133,20 +133,26 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
   // Animated reveal progress (0..1)
   const [revealProgress, setRevealProgress] = useState<number>(1);
 
-  // Fit 2D camera to bounds
+  // Fit 2D camera to bounds (accounts for mobile bottom sheet on portrait screens)
   const fitToExtents = useCallback(() => {
     if (!payload) return;
     const b = payload.bounds_local;
     const spanX = Math.max(b.max_x - b.min_x, 2);
     const spanY = Math.max(b.max_y - b.min_y, 2);
-    const padFactor = 0.78;
+    const isPortraitMobile = canvasSize.w < 768 && canvasSize.h > 500;
+    const padFactor = isPortraitMobile ? 0.68 : 0.76;
     const w = Math.max(canvasSize.w, 280);
-    const h = Math.max(canvasSize.h, 240);
-    const scale = Math.min((w * padFactor) / spanX, (h * padFactor) / spanY);
+    const effectiveH = isPortraitMobile
+      ? Math.max(canvasSize.h * 0.44, 160)
+      : Math.max(canvasSize.h - 110, 200);
+    const scale = Math.min((w * padFactor) / spanX, (effectiveH * padFactor) / spanY);
+    const safeScale = Math.max(scale, 0.05);
+    // Shift camera cy downward in world coords so geometry renders higher on portrait mobile
+    const mobileYOffsetWorld = isPortraitMobile ? (canvasSize.h * 0.22) / safeScale : 0;
     setCam2d({
       cx: (b.min_x + b.max_x) / 2,
-      cy: (b.min_y + b.max_y) / 2,
-      scale: Math.max(scale, 0.05)
+      cy: (b.min_y + b.max_y) / 2 - mobileYOffsetWorld,
+      scale: safeScale
     });
   }, [payload, canvasSize.w, canvasSize.h]);
 
@@ -967,120 +973,122 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
         }}
       />
 
-      {/* Top Floating Controls: 2D/3D Switch + Zoom + Fit + Measure */}
+      {/* Top Floating Controls Stack: Row 1 (2D/3D Switch + Tools), Row 2 (Layer Chips) */}
       <div
-        className="viewer-top-toolbar"
+        className="viewer-top-stack"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="segmented-2d-3d" role="group" aria-label="تغییر نمای دوبعدی و سه‌بعدی">
-          <button
-            type="button"
-            className={`seg-btn ${viewMode === "2d" ? "active" : ""}`}
-            onClick={() => setViewMode("2d")}
-          >
-            {fa.viewer.mode2d}
-          </button>
-          <button
-            type="button"
-            className={`seg-btn ${viewMode === "3d" ? "active" : ""}`}
-            onClick={() => setViewMode("3d")}
-          >
-            {fa.viewer.mode3d}
-          </button>
-        </div>
-
-        <div className="viewer-tool-btns">
-          <button
-            type="button"
-            className="viewer-icon-btn"
-            title={fa.viewer.fitView}
-            aria-label={fa.viewer.fitView}
-            onClick={fitToExtents}
-          >
-            ⊡
-          </button>
-          <button
-            type="button"
-            className="viewer-icon-btn"
-            title={fa.viewer.zoomIn}
-            aria-label={fa.viewer.zoomIn}
-            onClick={() =>
-              viewMode === "2d"
-                ? setCam2d((p) => ({ ...p, scale: Math.min(200, p.scale * 1.3) }))
-                : setOrbit3d((p) => ({ ...p, zoom: Math.min(8, p.zoom * 1.25) }))
-            }
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className="viewer-icon-btn"
-            title={fa.viewer.zoomOut}
-            aria-label={fa.viewer.zoomOut}
-            onClick={() =>
-              viewMode === "2d"
-                ? setCam2d((p) => ({ ...p, scale: Math.max(0.05, p.scale * 0.75) }))
-                : setOrbit3d((p) => ({ ...p, zoom: Math.max(0.25, p.zoom * 0.8) }))
-            }
-          >
-            −
-          </button>
-          {viewMode === "2d" && (
+        <div className="viewer-top-toolbar">
+          <div className="segmented-2d-3d" role="group" aria-label="تغییر نمای دوبعدی و سه‌بعدی">
             <button
               type="button"
-              className={`viewer-icon-btn ${measureActive ? "active" : ""}`}
-              title={fa.viewer.measureTool}
-              aria-label={fa.viewer.measureTool}
-              onClick={() => {
-                setMeasureActive((v) => !v);
-                setMeasurePts([]);
-              }}
+              className={`seg-btn ${viewMode === "2d" ? "active" : ""}`}
+              onClick={() => setViewMode("2d")}
             >
-              📏
+              {fa.viewer.mode2d}
             </button>
-          )}
-        </div>
-      </div>
+            <button
+              type="button"
+              className={`seg-btn ${viewMode === "3d" ? "active" : ""}`}
+              onClick={() => setViewMode("3d")}
+            >
+              {fa.viewer.mode3d}
+            </button>
+          </div>
 
-      {/* 3D Vertical Exaggeration Slider */}
-      {viewMode === "3d" && (
+          <div className="viewer-tool-btns">
+            <button
+              type="button"
+              className="viewer-icon-btn"
+              title={fa.viewer.fitView}
+              aria-label={fa.viewer.fitView}
+              onClick={fitToExtents}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="viewer-icon-btn"
+              title={fa.viewer.zoomIn}
+              aria-label={fa.viewer.zoomIn}
+              onClick={() =>
+                viewMode === "2d"
+                  ? setCam2d((p) => ({ ...p, scale: Math.min(200, p.scale * 1.3) }))
+                  : setOrbit3d((p) => ({ ...p, zoom: Math.min(8, p.zoom * 1.25) }))
+              }
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className="viewer-icon-btn"
+              title={fa.viewer.zoomOut}
+              aria-label={fa.viewer.zoomOut}
+              onClick={() =>
+                viewMode === "2d"
+                  ? setCam2d((p) => ({ ...p, scale: Math.max(0.05, p.scale * 0.75) }))
+                  : setOrbit3d((p) => ({ ...p, zoom: Math.max(0.25, p.zoom * 0.8) }))
+              }
+            >
+              −
+            </button>
+            {viewMode === "2d" && (
+              <button
+                type="button"
+                className={`viewer-icon-btn ${measureActive ? "active" : ""}`}
+                title={fa.viewer.measureTool}
+                aria-label={fa.viewer.measureTool}
+                onClick={() => {
+                  setMeasureActive((v) => !v);
+                  setMeasurePts([]);
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M3 17l14-14 4 4-14 14-4-4zM14 6l2 2M10 10l2 2M6 14l2 2" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Layer Toggles Strip */}
         <div
-          className="viewer-3d-exag-bar"
-          onPointerDown={(e) => e.stopPropagation()}
+          className="viewer-layers-bar"
+          role="toolbar"
+          aria-label={fa.viewer.layersTitle}
         >
-          <label htmlFor="vexag-slider">
-            {fa.viewer.verticalExag}{" "}
-            <strong>{formatInt(verticalExag, persianDigits)}×</strong>
-          </label>
-          <input
-            id="vexag-slider"
-            type="range"
-            min={1}
-            max={20}
-            step={1}
-            value={verticalExag}
-            onChange={(e) => setVerticalExag(Number(e.target.value))}
-          />
+          {layerKeys.map((k) => (
+            <button
+              key={k}
+              type="button"
+              className={`layer-chip ${layers[k] ? "active" : ""}`}
+              onClick={() => onToggleLayer(k)}
+            >
+              {fa.viewer.layers[k]}
+            </button>
+          ))}
         </div>
-      )}
 
-      {/* Layer Toggles Strip */}
-      <div
-        className="viewer-layers-bar"
-        onPointerDown={(e) => e.stopPropagation()}
-        role="toolbar"
-        aria-label={fa.viewer.layersTitle}
-      >
-        {layerKeys.map((k) => (
-          <button
-            key={k}
-            type="button"
-            className={`layer-chip ${layers[k] ? "active" : ""}`}
-            onClick={() => onToggleLayer(k)}
-          >
-            {fa.viewer.layers[k]}
-          </button>
-        ))}
+        {/* 3D Vertical Exaggeration Slider */}
+        {viewMode === "3d" && (
+          <div className="viewer-3d-exag-bar">
+            <label htmlFor="vexag-slider">
+              {fa.viewer.verticalExag}{" "}
+              <strong>{formatInt(verticalExag, persianDigits)}×</strong>
+            </label>
+            <input
+              id="vexag-slider"
+              type="range"
+              min={1}
+              max={20}
+              step={1}
+              value={verticalExag}
+              onChange={(e) => setVerticalExag(Number(e.target.value))}
+            />
+          </div>
+        )}
       </div>
 
       {/* North Arrow & Scale Bar & Legend */}

@@ -46,30 +46,33 @@ def run(
     removed_points: list[RemovedPoint] = []
     removed_indices: set[int] = set()
 
-    # 1. Duplicate removal using 2D cKDTree in local meter coordinates
+    # 1. Duplicate removal using 2D cKDTree in local meter coordinates (vectorized query_pairs)
     if duplicate_tolerance > 0 and n_total > 1:
         tree_dup = cKDTree(xy)
-        for i in range(n_total):
-            if i in removed_indices:
-                continue
-            neighbors = tree_dup.query_ball_point(xy[i], r=duplicate_tolerance)
-            for j in neighbors:
-                if j > i and j not in removed_indices:
-                    dist = float(np.linalg.norm(xy[j] - xy[i]))
-                    removed_indices.add(j)
-                    removed_points.append(
-                        RemovedPoint(
-                            point=pts[j],
-                            reason="duplicate",
-                            metric_value=dist,
-                            detail=f"فاصله افقی {dist:.4f}m نسبت به نقطه شماره {pts[i].id} (کمتر از تلرانس {duplicate_tolerance:.4f}m)",
-                        )
+        pairs = tree_dup.query_pairs(r=duplicate_tolerance, output_type="ndarray")
+        if len(pairs) > 0:
+            # Sort pairs by (i, j) so greedy first-kept behavior is identical
+            order = np.lexsort((pairs[:, 1], pairs[:, 0]))
+            for idx_pair in order:
+                i = int(pairs[idx_pair, 0])
+                j = int(pairs[idx_pair, 1])
+                if i in removed_indices or j in removed_indices:
+                    continue
+                dist = float(np.linalg.norm(xy[j] - xy[i]))
+                removed_indices.add(j)
+                removed_points.append(
+                    RemovedPoint(
+                        point=pts[j],
+                        reason="duplicate",
+                        metric_value=dist,
+                        detail=f"فاصله افقی {dist:.4f}m نسبت به نقطه شماره {pts[i].id} (کمتر از تلرانس {duplicate_tolerance:.4f}m)",
                     )
+                )
 
     surviving_after_dup = [i for i in range(n_total) if i not in removed_indices]
     duplicate_removed_count = len(removed_indices)
 
-    # 2. Local z-score elevation outlier removal on surviving points
+    # 2. Local z-score elevation outlier removal on surviving points (vectorized over (N, k) neighbor matrix)
     outlier_removed_count = 0
     max_observed_zscore = 0.0
     if len(surviving_after_dup) >= 4:
@@ -81,35 +84,37 @@ def run(
         _, nbr_positions = tree_out.query(surv_xy, k=k_query)
 
         # Compute robust local elevation statistics using neighbors (excluding self at col 0)
-        for local_pos, orig_idx in enumerate(surv_idx):
-            nbr_cols = nbr_positions[local_pos, 1:]
-            nbr_z_vals = surv_z[nbr_cols]
-            # Use median and MAD-based robust std (with fallback to std and 0.05m floor)
-            med_z = float(np.median(nbr_z_vals))
-            mad = float(np.median(np.abs(nbr_z_vals - med_z)))
-            robust_sigma = max(1.4826 * mad, float(np.std(nbr_z_vals)) * 0.5, 0.05)
-            pt_z = float(surv_z[local_pos])
-            residual = abs(pt_z - med_z)
-            # An isolated spike/blunder also disagrees with its closest-in-elevation local neighbor
-            min_nbr_dz = float(np.min(np.abs(nbr_z_vals - pt_z)))
-            z_score = residual / robust_sigma
-            max_observed_zscore = max(max_observed_zscore, z_score)
+        nbr_z_mat = surv_z[nbr_positions[:, 1:]]  # shape (N_surv, k-1)
+        med_z_vec = np.median(nbr_z_mat, axis=1)
+        mad_vec = np.median(np.abs(nbr_z_mat - med_z_vec[:, None]), axis=1)
+        std_vec = np.std(nbr_z_mat, axis=1)
+        robust_sigma_vec = np.maximum(np.maximum(1.4826 * mad_vec, std_vec * 0.5), 0.05)
+        residual_vec = np.abs(surv_z - med_z_vec)
+        min_nbr_dz_vec = np.min(np.abs(nbr_z_mat - surv_z[:, None]), axis=1)
+        z_score_vec = residual_vec / robust_sigma_vec
+        max_observed_zscore = (
+            float(np.max(z_score_vec)) if len(z_score_vec) > 0 else 0.0
+        )
 
-            if (
-                z_score > outlier_z_threshold
-                and residual >= min_elev_residual
-                and min_nbr_dz >= min_elev_residual
-            ):
-                removed_indices.add(int(orig_idx))
-                outlier_removed_count += 1
-                removed_points.append(
-                    RemovedPoint(
-                        point=pts[int(orig_idx)],
-                        reason="outlier",
-                        metric_value=z_score,
-                        detail=f"اختلاف ارتفاع محلی {residual:.3f}m (امتیاز z={z_score:.2f} > {outlier_z_threshold:.2f})",
-                    )
+        outlier_mask = (
+            (z_score_vec > outlier_z_threshold)
+            & (residual_vec >= min_elev_residual)
+            & (min_nbr_dz_vec >= min_elev_residual)
+        )
+        for local_pos in np.flatnonzero(outlier_mask):
+            orig_idx = int(surv_idx[local_pos])
+            z_score = float(z_score_vec[local_pos])
+            residual = float(residual_vec[local_pos])
+            removed_indices.add(orig_idx)
+            outlier_removed_count += 1
+            removed_points.append(
+                RemovedPoint(
+                    point=pts[orig_idx],
+                    reason="outlier",
+                    metric_value=z_score,
+                    detail=f"اختلاف ارتفاع محلی {residual:.3f}m (امتیاز z={z_score:.2f} > {outlier_z_threshold:.2f})",
                 )
+            )
 
     cleaned_points = [pts[i] for i in range(n_total) if i not in removed_indices]
     if len(cleaned_points) < 3:

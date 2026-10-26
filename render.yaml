@@ -1,0 +1,18 @@
+# Render Blueprint specification (verified against render-examples/fastapi & render-examples/bun-docker)
+services:
+  - type: web
+    name: topoconvert-survey-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: TOPOCONVERT_SESSION_TTL
+        value: "7200"
+      - key: TOPOCONVERT_MAX_UPLOAD_MB
+        value: "20"
+      - key: TOPOCONVERT_MAX_POINTS
+        value: "200000"
