@@ -175,3 +175,5 @@ ehthumbs_vista.db
 .agent-os/
 /.claude
 /test_install_env
+tests/fixtures/survey_200k.txt
+

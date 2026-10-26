@@ -70,7 +70,7 @@ def register(cli) -> None:
         start_corner,
         include_boundary,
     ) -> None:
-        """Generate GPS grid points within boundaries.
+        """Generate GPS grid points within property boundaries.
 
         Supports KML polygons, CSV boundary points, or CSV point extents with buffer.
         The grid points are generated within the specified boundaries for field surveys.
