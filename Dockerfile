@@ -39,7 +39,7 @@ COPY --from=frontend-builder /app/survey_web/static_bundle/ ./survey_web/static_
 
 # Install TopoConvert + Web API dependencies
 RUN pip install --upgrade pip && \
-    pip install -e ".[web]"
+    pip install .
 
 # Run as non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
