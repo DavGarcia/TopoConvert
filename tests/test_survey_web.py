@@ -84,21 +84,30 @@ class TestSurveyWebAPI:
         assert r_state.status_code == 200
         assert r_state.json()["session_id"] == sid
 
-        # 5. Exports (DXF, CSV, Report)
+        # 5. Exports (DXF default + local_origin, CSV, Report)
         r_dxf = client.get(f"/api/sessions/{sid}/export/dxf")
         assert r_dxf.status_code == 200
+        assert r_dxf.headers.get("X-DXF-Offset-X") == "0"
+        assert r_dxf.headers.get("X-DXF-Offset-Y") == "0"
         dxf_path = tmp_path / "api_out.dxf"
         dxf_path.write_bytes(r_dxf.content)
         doc = ezdxf.readfile(str(dxf_path))
         assert len(doc.audit().errors) == 0
+        assert doc.header["$PDMODE"] == 35
+
+        r_dxf_loc = client.get(f"/api/sessions/{sid}/export/dxf?local_origin=true")
+        assert r_dxf_loc.status_code == 200
+        assert r_dxf_loc.headers.get("X-DXF-Offset-X") == "721000"
+        assert r_dxf_loc.headers.get("X-DXF-Offset-Y") == "4028000"
 
         r_csv = client.get(f"/api/sessions/{sid}/export/csv")
         assert r_csv.status_code == 200
         assert "Northing,Easting,Elevation" in r_csv.text
 
-        r_rep = client.get(f"/api/sessions/{sid}/export/report")
+        r_rep = client.get(f"/api/sessions/{sid}/export/report?local_origin=true")
         assert r_rep.status_code == 200
         assert 'dir="rtl"' in r_rep.text
+        assert "۷۲۱,۰۰۰" in r_rep.text
 
     def test_multipart_upload_and_limits(self, monkeypatch) -> None:
         client = TestClient(create_app())

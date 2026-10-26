@@ -328,6 +328,13 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
         <div class="meta">
           مبدأ محلی محاسبات: E₀={{ origin_e0 }}m ، N₀={{ origin_n0 }}m ، Z₀={{ origin_z0 }}m
         </div>
+        <div class="meta">
+          {% if shift_to_local_origin %}
+          وضعیت مختصات خروجی DXF: <strong>انتقال‌یافته به مبدأ محلی (گردشده به هزارگان) — آفست کسرشده: ΔX = {{ dxf_offset_x }}m ، ΔY = {{ dxf_offset_y }}m (ارتفاع Z دست‌نخورده)</strong>
+          {% else %}
+          وضعیت مختصات خروجی DXF: <strong>مختصات اصلی UTM دست‌نخورده (بدون انتقال؛ ΔX = ۰ ، ΔY = ۰)</strong>
+          {% endif %}
+        </div>
       </div>
       <button class="print-btn" onclick="window.print()">چاپ / ذخیره PDF (A4)</button>
     </div>
@@ -427,11 +434,16 @@ ROLE_LABELS_FA = {
 }
 
 
-def render_html_report(state: SurveyState) -> str:
+def render_html_report(state: SurveyState, shift_to_local_origin: bool = False) -> str:
     """Render a complete, print-ready Persian RTL HTML report from `state`."""
+    from survey_core.export import get_dxf_local_origin_offset
+
     m = state.metrics or {}
     elev = m.get("elevation_m") or {"min": 0.0, "max": 0.0, "mean": 0.0}
     slope = m.get("slope") or {"mean_deg": 0.0, "max_deg": 0.0, "mean_pct": 0.0}
+    offset_x, offset_y = get_dxf_local_origin_offset(
+        state, shift_to_local_origin=shift_to_local_origin
+    )
 
     codes_rows = [
         {
@@ -453,6 +465,9 @@ def render_html_report(state: SurveyState) -> str:
         origin_e0=to_fa_num(state.origin.e0, 3),
         origin_n0=to_fa_num(state.origin.n0, 3),
         origin_z0=to_fa_num(state.origin.z0, 3),
+        shift_to_local_origin=shift_to_local_origin,
+        dxf_offset_x=to_fa_num(int(offset_x), 0),
+        dxf_offset_y=to_fa_num(int(offset_y), 0),
         pt_raw=to_fa_num(m.get("point_count_raw", len(state.raw_points)), 0),
         pt_clean=to_fa_num(m.get("point_count_cleaned", len(state.cleaned_points)), 0),
         pt_active=to_fa_num(m.get("point_count_active", len(state.active_points)), 0),

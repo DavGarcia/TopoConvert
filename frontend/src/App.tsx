@@ -66,6 +66,7 @@ export const App: React.FC = () => {
 
   // Step 7 params
   const [refElevation, setRefElevation] = useState<string>("");
+  const [dxfLocalOrigin, setDxfLocalOrigin] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1080,10 +1081,27 @@ export const App: React.FC = () => {
                 {session && (
                   <div className="export-actions-card">
                     <div className="field-label">{fa.step7.exportsTitle}</div>
+                    <label className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={dxfLocalOrigin}
+                        onChange={(e) => setDxfLocalOrigin(e.target.checked)}
+                      />
+                      <span>انتقال به مبدأ محلی در خروجی DXF (کسر مینیمم X و Y گردشده به هزارگان)</span>
+                    </label>
+                    {dxfLocalOrigin && session.viewer_payload?.origin && (
+                      <div className="assumption-note">
+                        آفست کسرشده از X و Y (بدون تغییر ارتفاع Z):{" "}
+                        <strong>
+                          ΔX = {formatInt(Math.floor(session.viewer_payload.origin.e0 / 1000) * 1000, persianDigits)}m ،{" "}
+                          ΔY = {formatInt(Math.floor(session.viewer_payload.origin.n0 / 1000) * 1000, persianDigits)}m
+                        </strong>
+                      </div>
+                    )}
                     <div className="export-btns-grid">
                       <a
                         className="btn-export-primary"
-                        href={`/api/sessions/${session.session_id}/export/dxf`}
+                        href={`/api/sessions/${session.session_id}/export/dxf${dxfLocalOrigin ? "?local_origin=true" : ""}`}
                         download="topoconvert_survey.dxf"
                       >
                         {fa.actions.downloadDxf}
@@ -1097,7 +1115,7 @@ export const App: React.FC = () => {
                       </a>
                       <a
                         className="btn-export-secondary"
-                        href={`/api/sessions/${session.session_id}/export/report`}
+                        href={`/api/sessions/${session.session_id}/export/report${dxfLocalOrigin ? "?local_origin=true" : ""}`}
                         target="_blank"
                         rel="noreferrer"
                       >

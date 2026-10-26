@@ -102,14 +102,60 @@ class TestGoldenDemoPipeline:
         state, _, _ = pipeline.run_pipeline_to_step(raw_text, "demo.txt", up_to_step=7)
 
         dxf_file = tmp_path / "demo_output.dxf"
-        export.export_dxf_bytes(state, output_path=dxf_file)
+        dxf_bytes = export.export_dxf_bytes(state, output_path=dxf_file)
         assert dxf_file.exists()
 
-        # Read back with ezdxf
+        # Verify uniform CRLF line endings
+        assert b"\r\n" in dxf_bytes
+        assert b"\n" not in dxf_bytes.replace(b"\r\n", b"")
+
+        # Read back with ezdxf and verify extents, *Active VPORT, PDMODE/PDSIZE, and audit
+        verification = export.verify_dxf_extents_and_viewport(dxf_file)
+        assert verification["pdmode"] == 35
+        assert verification["pdsize"] == pytest.approx(0.4)
+        extmin = verification["extmin"]
+        extmax = verification["extmax"]
+        vp_cx, vp_cy = verification["vport_center"]
+        assert extmin[0] <= vp_cx <= extmax[0]
+        assert extmin[1] <= vp_cy <= extmax[1]
+        max_span_xy = max(extmax[0] - extmin[0], extmax[1] - extmin[1])
+        assert verification["vport_height"] == pytest.approx(
+            max_span_xy * 1.15, rel=1e-2
+        )
+
         doc = ezdxf.readfile(str(dxf_file))
         auditor = doc.audit()
         assert len(auditor.errors) == 0, f"DXF audit errors: {auditor.errors}"
         assert len(auditor.fixes) == 0, f"DXF audit fixes: {auditor.fixes}"
+
+        # Verify TEXT height is ~0.15% of largest map dimension
+        msp = doc.modelspace()
+        txt_entities = list(msp.query('TEXT[layer=="PT_NO"]'))
+        assert len(txt_entities) == 216
+        expected_txt_h = max(round(302.899 * 0.0015, 4), 0.05)
+        assert float(txt_entities[0].dxf.height) == pytest.approx(
+            expected_txt_h, rel=1e-2
+        )
+
+        # Verify shift_to_local_origin=True option (subtracts 721000 from X and 4028000 from Y, keeps Z untouched)
+        dxf_local_file = tmp_path / "demo_local_origin.dxf"
+        export.export_dxf_bytes(
+            state, output_path=dxf_local_file, shift_to_local_origin=True
+        )
+        ver_local = export.verify_dxf_extents_and_viewport(dxf_local_file)
+        assert 600.0 <= ver_local["extmin"][0] <= 700.0
+        assert 600.0 <= ver_local["extmin"][1] <= 700.0
+        doc_local = ezdxf.readfile(str(dxf_local_file))
+        pt0_local = next(iter(doc_local.modelspace().query('POINT[layer=="POINTS"]')))
+        assert float(pt0_local.dxf.location.x) == pytest.approx(
+            state.active_points[0].easting - 721000.0, abs=1e-6
+        )
+        assert float(pt0_local.dxf.location.y) == pytest.approx(
+            state.active_points[0].northing - 4028000.0, abs=1e-6
+        )
+        assert float(pt0_local.dxf.location.z) == pytest.approx(
+            state.active_points[0].elevation, abs=1e-6
+        )
 
         # Verify all required layers exist
         expected_layers = {

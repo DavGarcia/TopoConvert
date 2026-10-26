@@ -259,7 +259,9 @@ def create_app(session_ttl_min: float | None = None) -> FastAPI:
         )
 
     @application.get("/api/sessions/{session_id}/export/{export_type}")
-    async def export_artifact(session_id: str, export_type: str) -> Response:
+    async def export_artifact(
+        session_id: str, export_type: str, local_origin: bool = False
+    ) -> Response:
         """Export CAD DXF (`dxf`), cleaned points CSV (`csv`), or printable HTML report (`report`)."""
         rec = store.get(session_id)
         if rec is None:
@@ -283,12 +285,19 @@ def create_app(session_ttl_min: float | None = None) -> FastAPI:
 
         if fmt == "dxf":
             dxf_path = rec.temp_dir / "survey_export.dxf"
-            dxf_bytes = export.export_dxf_bytes(state, output_path=dxf_path)
+            offset_x, offset_y = export.get_dxf_local_origin_offset(
+                state, shift_to_local_origin=local_origin
+            )
+            dxf_bytes = export.export_dxf_bytes(
+                state, output_path=dxf_path, shift_to_local_origin=local_origin
+            )
             return Response(
                 content=dxf_bytes,
                 media_type="application/dxf",
                 headers={
-                    "Content-Disposition": 'attachment; filename="topoconvert_survey.dxf"'
+                    "Content-Disposition": 'attachment; filename="topoconvert_survey.dxf"',
+                    "X-DXF-Offset-X": str(int(offset_x)),
+                    "X-DXF-Offset-Y": str(int(offset_y)),
                 },
             )
 
@@ -302,7 +311,7 @@ def create_app(session_ttl_min: float | None = None) -> FastAPI:
                 },
             )
 
-        html_str = report.render_html_report(state)
+        html_str = report.render_html_report(state, shift_to_local_origin=local_origin)
         return HTMLResponse(content=html_str)
 
     # Mount static frontend bundle if built
