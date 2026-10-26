@@ -13,6 +13,8 @@ interface TopoViewerProps {
   showSlopeHeatmap: boolean;
   layers: LayerVisibility;
   onToggleLayer: (key: keyof LayerVisibility) => void;
+  mobileMapExpanded?: boolean;
+  onToggleMobileMapExpanded?: () => void;
 }
 
 function elevationColorRGB(t: number): [number, number, number] {
@@ -91,7 +93,9 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
   liveMinAngle,
   showSlopeHeatmap,
   layers,
-  onToggleLayer
+  onToggleLayer,
+  mobileMapExpanded = false,
+  onToggleMobileMapExpanded
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvas2dRef = useRef<HTMLCanvasElement | null>(null);
@@ -100,6 +104,9 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
   const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
   const [verticalExag, setVerticalExag] = useState<number>(6);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 800, h: 600 });
+  const [mobileLayersOpen, setMobileLayersOpen] = useState<boolean>(false);
+  const [mobileSpecOpen, setMobileSpecOpen] = useState<boolean>(false);
+  const [baseScale2d, setBaseScale2d] = useState<number>(2);
 
   // 2D Camera state: world center (cx, cy) and zoom scale (pixels per meter)
   const [cam2d, setCam2d] = useState<{ cx: number; cy: number; scale: number }>({
@@ -133,26 +140,26 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
   // Animated reveal progress (0..1)
   const [revealProgress, setRevealProgress] = useState<number>(1);
 
-  // Fit 2D camera to bounds (accounts for mobile bottom sheet on portrait screens)
+  // Fit 2D/3D camera cleanly to the actual map container bounds
   const fitToExtents = useCallback(() => {
     if (!payload) return;
     const b = payload.bounds_local;
     const spanX = Math.max(b.max_x - b.min_x, 2);
     const spanY = Math.max(b.max_y - b.min_y, 2);
-    const isPortraitMobile = canvasSize.w < 768 && canvasSize.h > 500;
-    const padFactor = isPortraitMobile ? 0.68 : 0.76;
-    const w = Math.max(canvasSize.w, 280);
-    const effectiveH = isPortraitMobile
-      ? Math.max(canvasSize.h * 0.44, 160)
-      : Math.max(canvasSize.h - 110, 200);
-    const scale = Math.min((w * padFactor) / spanX, (effectiveH * padFactor) / spanY);
+    const w = Math.max(canvasSize.w - 48, 220);
+    const h = Math.max(canvasSize.h - 92, 160);
+    const scale = Math.min((w * 0.86) / spanX, (h * 0.86) / spanY);
     const safeScale = Math.max(scale, 0.05);
-    // Shift camera cy downward in world coords so geometry renders higher on portrait mobile
-    const mobileYOffsetWorld = isPortraitMobile ? (canvasSize.h * 0.22) / safeScale : 0;
+    setBaseScale2d(safeScale);
     setCam2d({
       cx: (b.min_x + b.max_x) / 2,
-      cy: (b.min_y + b.max_y) / 2 - mobileYOffsetWorld,
+      cy: (b.min_y + b.max_y) / 2 + 8 / safeScale,
       scale: safeScale
+    });
+    setOrbit3d({
+      yaw: 0.65,
+      pitch: 0.55,
+      zoom: 1.0
     });
   }, [payload, canvasSize.w, canvasSize.h]);
 
@@ -769,7 +776,30 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
     showSlopeHeatmap
   ]);
 
-  // Pointer & touch gestures (pan, pinch-zoom, orbit, tap inspection)
+  // Multi-touch pointer tracking (1-finger pan/orbit, 2-finger pinch-zoom + pan, double-tap zoom)
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{
+    active: boolean;
+    startDist: number;
+    startScale: number;
+    startZoom3d: number;
+    worldMidX: number;
+    worldMidY: number;
+  }>({
+    active: false,
+    startDist: 1,
+    startScale: 1,
+    startZoom3d: 1,
+    worldMidX: 0,
+    worldMidY: 0
+  });
+
+  const lastTapRef = useRef<{ time: number; x: number; y: number }>({
+    time: 0,
+    x: 0,
+    y: 0
+  });
+
   const dragRef = useRef<{
     active: boolean;
     moved: boolean;
@@ -790,7 +820,59 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
     pitch: 0
   });
 
+  const zoomByFactor = useCallback(
+    (factor: number, screenFocalX?: number, screenFocalY?: number) => {
+      if (viewMode === "2d") {
+        setCam2d((prev) => {
+          const nextScale = Math.max(0.05, Math.min(250, prev.scale * factor));
+          if (screenFocalX !== undefined && screenFocalY !== undefined) {
+            const wx = prev.cx + (screenFocalX - canvasSize.w / 2) / prev.scale;
+            const wy = prev.cy - (screenFocalY - canvasSize.h / 2) / prev.scale;
+            return {
+              cx: wx - (screenFocalX - canvasSize.w / 2) / nextScale,
+              cy: wy + (screenFocalY - canvasSize.h / 2) / nextScale,
+              scale: nextScale
+            };
+          }
+          return { ...prev, scale: nextScale };
+        });
+      } else {
+        setOrbit3d((prev) => ({
+          ...prev,
+          zoom: Math.max(0.25, Math.min(10, prev.zoom * factor))
+        }));
+      }
+    },
+    [viewMode, canvasSize.w, canvasSize.h]
+  );
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    pointersRef.current.set(e.pointerId, { x: sx, y: sy });
+
+    if (pointersRef.current.size === 2) {
+      const pts = Array.from(pointersRef.current.values());
+      const dist = Math.max(Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y), 10);
+      const midX = (pts[0].x + pts[1].x) * 0.5;
+      const midY = (pts[0].y + pts[1].y) * 0.5;
+      const worldMidX = cam2d.cx + (midX - canvasSize.w / 2) / cam2d.scale;
+      const worldMidY = cam2d.cy - (midY - canvasSize.h / 2) / cam2d.scale;
+      pinchRef.current = {
+        active: true,
+        startDist: dist,
+        startScale: cam2d.scale,
+        startZoom3d: orbit3d.zoom,
+        worldMidX,
+        worldMidY
+      };
+      dragRef.current.active = false;
+      dragRef.current.moved = true;
+      return;
+    }
+
+    pinchRef.current.active = false;
     dragRef.current = {
       active: true,
       moved: false,
@@ -804,6 +886,36 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    if (pointersRef.current.has(e.pointerId)) {
+      pointersRef.current.set(e.pointerId, { x: sx, y: sy });
+    }
+
+    if (pointersRef.current.size === 2 && pinchRef.current.active) {
+      const pts = Array.from(pointersRef.current.values());
+      const curDist = Math.max(Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y), 10);
+      const ratio = curDist / pinchRef.current.startDist;
+      const midX = (pts[0].x + pts[1].x) * 0.5;
+      const midY = (pts[0].y + pts[1].y) * 0.5;
+
+      if (viewMode === "2d") {
+        const nextScale = Math.max(0.05, Math.min(250, pinchRef.current.startScale * ratio));
+        setCam2d({
+          cx: pinchRef.current.worldMidX - (midX - canvasSize.w / 2) / nextScale,
+          cy: pinchRef.current.worldMidY + (midY - canvasSize.h / 2) / nextScale,
+          scale: nextScale
+        });
+      } else {
+        setOrbit3d((prev) => ({
+          ...prev,
+          zoom: Math.max(0.25, Math.min(10, pinchRef.current.startZoom3d * ratio))
+        }));
+      }
+      return;
+    }
+
     if (!dragRef.current.active) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
@@ -825,20 +937,53 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
     }
   };
 
+  const handlePointerCancelOrLeave = (e: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) {
+      pinchRef.current.active = false;
+    }
+    if (pointersRef.current.size === 0) {
+      dragRef.current.active = false;
+    }
+  };
+
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size > 0) {
+      pinchRef.current.active = false;
+      return;
+    }
+
     const wasMoved = dragRef.current.moved;
     dragRef.current.active = false;
-    if (wasMoved || viewMode !== "2d" || !payload) return;
+    pinchRef.current.active = false;
+    if (wasMoved || !payload) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
+
+    // Double-tap to zoom in smoothly around tapped location
+    const now = performance.now();
+    if (
+      now - lastTapRef.current.time < 300 &&
+      Math.hypot(sx - lastTapRef.current.x, sy - lastTapRef.current.y) < 28 &&
+      !measureActive
+    ) {
+      lastTapRef.current = { time: 0, x: 0, y: 0 };
+      zoomByFactor(1.65, sx, sy);
+      return;
+    }
+    lastTapRef.current = { time: now, x: sx, y: sy };
+
+    if (viewMode !== "2d") return;
+
     const wx = cam2d.cx + (sx - canvasSize.w / 2) / cam2d.scale;
     const wy = cam2d.cy - (sy - canvasSize.h / 2) / cam2d.scale;
 
-    // Find nearest point within 14px
+    // Find nearest point within 18px (generous mobile touch radius)
     let bestPt: ViewerPoint | null = null;
-    let bestDistPx = 14;
+    let bestDistPx = 18;
     for (const p of payload.points) {
       const px = canvasSize.w / 2 + (p.x - cam2d.cx) * cam2d.scale;
       const py = canvasSize.h / 2 - (p.y - cam2d.cy) * cam2d.scale;
@@ -897,19 +1042,17 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    const factor = e.deltaY < 0 ? 1.18 : 0.85;
-    if (viewMode === "2d") {
-      setCam2d((prev) => ({
-        ...prev,
-        scale: Math.max(0.05, Math.min(200, prev.scale * factor))
-      }));
-    } else {
-      setOrbit3d((prev) => ({
-        ...prev,
-        zoom: Math.max(0.25, Math.min(8, prev.zoom * factor))
-      }));
-    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.2 : 0.84;
+    zoomByFactor(factor, sx, sy);
   };
+
+  const currentZoomMultiple = useMemo(() => {
+    if (viewMode === "3d") return orbit3d.zoom;
+    return cam2d.scale / Math.max(baseScale2d, 0.01);
+  }, [viewMode, orbit3d.zoom, cam2d.scale, baseScale2d]);
 
   // Scale bar length computation
   const scaleBar = useMemo(() => {
@@ -952,6 +1095,8 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancelOrLeave}
+      onPointerLeave={handlePointerCancelOrLeave}
       onDoubleClick={fitToExtents}
       onWheel={handleWheel}
     >
@@ -999,6 +1144,24 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
           <div className="viewer-tool-btns">
             <button
               type="button"
+              className={`viewer-pill-toggle mobile-only-toggle ${mobileLayersOpen ? "active" : ""}`}
+              onClick={() => setMobileLayersOpen((v) => !v)}
+              aria-label="لایه‌های نقشه"
+            >
+              لایه‌ها
+            </button>
+            {activeStep === 7 && payload?.metrics && (
+              <button
+                type="button"
+                className={`viewer-pill-toggle mobile-only-toggle ${mobileSpecOpen ? "active" : ""}`}
+                onClick={() => setMobileSpecOpen((v) => !v)}
+                aria-label="مشخصات احجام و لایه‌ها"
+              >
+                احجام
+              </button>
+            )}
+            <button
+              type="button"
               className="viewer-icon-btn"
               title={fa.viewer.fitView}
               aria-label={fa.viewer.fitView}
@@ -1010,27 +1173,19 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
             </button>
             <button
               type="button"
-              className="viewer-icon-btn"
+              className="viewer-icon-btn desktop-only-zoom"
               title={fa.viewer.zoomIn}
               aria-label={fa.viewer.zoomIn}
-              onClick={() =>
-                viewMode === "2d"
-                  ? setCam2d((p) => ({ ...p, scale: Math.min(200, p.scale * 1.3) }))
-                  : setOrbit3d((p) => ({ ...p, zoom: Math.min(8, p.zoom * 1.25) }))
-              }
+              onClick={() => zoomByFactor(1.3)}
             >
               +
             </button>
             <button
               type="button"
-              className="viewer-icon-btn"
+              className="viewer-icon-btn desktop-only-zoom"
               title={fa.viewer.zoomOut}
               aria-label={fa.viewer.zoomOut}
-              onClick={() =>
-                viewMode === "2d"
-                  ? setCam2d((p) => ({ ...p, scale: Math.max(0.05, p.scale * 0.75) }))
-                  : setOrbit3d((p) => ({ ...p, zoom: Math.max(0.25, p.zoom * 0.8) }))
-              }
+              onClick={() => zoomByFactor(0.75)}
             >
               −
             </button>
@@ -1050,12 +1205,22 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
                 </svg>
               </button>
             )}
+            {onToggleMobileMapExpanded && (
+              <button
+                type="button"
+                className={`viewer-pill-toggle mobile-only-toggle ${mobileMapExpanded ? "active" : ""}`}
+                onClick={onToggleMobileMapExpanded}
+                title={mobileMapExpanded ? "بازگشت به پنل" : "نقشه بزرگ"}
+              >
+                {mobileMapExpanded ? "پنل گام" : "نقشه بزرگ"}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Layer Toggles Strip */}
+        {/* Layer Toggles Strip (always visible on desktop, toggleable on mobile so map stays spacious) */}
         <div
-          className="viewer-layers-bar"
+          className={`viewer-layers-bar ${mobileLayersOpen ? "mobile-open" : ""}`}
           role="toolbar"
           aria-label={fa.viewer.layersTitle}
         >
@@ -1089,6 +1254,59 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
             />
           </div>
         )}
+      </div>
+
+      {/* Floating Ergonomic Thumb Zoom Dock (Right side of map — effortless 1-hand zoom on mobile & desktop) */}
+      {payload && (
+        <div
+          className="viewer-thumb-zoom-dock"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="thumb-zoom-btn"
+            aria-label={fa.viewer.zoomIn}
+            title={fa.viewer.zoomIn}
+            onClick={() => zoomByFactor(1.35)}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="thumb-zoom-readout"
+            title="بازنشانی بزرگ‌نمایی (۱ برابر)"
+            onClick={fitToExtents}
+          >
+            {formatNum(currentZoomMultiple, 1, persianDigits)}×
+          </button>
+          <button
+            type="button"
+            className="thumb-zoom-btn"
+            aria-label={fa.viewer.zoomOut}
+            title={fa.viewer.zoomOut}
+            onClick={() => zoomByFactor(0.74)}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="thumb-zoom-btn fit-btn"
+            aria-label={fa.viewer.fitView}
+            title={fa.viewer.fitView}
+            onClick={fitToExtents}
+          >
+            ⟲
+          </button>
+        </div>
+      )}
+
+      {/* Yousefi Intelligence Watermark Badge on Map */}
+      <div
+        className="viewer-brand-watermark"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <span className="brand-sparkle">✦</span>
+        <span>Yousefi Intelligence</span>
       </div>
 
       {/* North Arrow & Scale Bar & Legend */}
@@ -1141,7 +1359,7 @@ export const TopoViewer: React.FC<TopoViewerProps> = ({
       {/* Side Specification & Volume/Layer Breakdown Box beside the map in Step 7 */}
       {payload && activeStep === 7 && payload.metrics && (
         <div
-          className="viewer-side-spec-box"
+          className={`viewer-side-spec-box ${mobileSpecOpen ? "mobile-open" : ""}`}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="side-spec-hdr">مشخصات احجام و لایه‌های نقشه</div>

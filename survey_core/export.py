@@ -133,7 +133,7 @@ def _draw_side_spec_and_layer_table(
     # 1. Title Banner
     add_hline(cur_y)
     t_main = msp.add_text(
-        "TOPOCONVERT - SURVEY, VOLUME & LAYER SPECIFICATIONS",
+        "YOUSEFI INTELLIGENCE | TOPOCONVERT - SURVEY & VOLUME SPECS",
         dxfattribs={"layer": "INFO_TABLE", "height": title_th},
     )
     t_main.set_placement(
@@ -145,6 +145,7 @@ def _draw_side_spec_and_layer_table(
 
     # 2. General & Volume Specifications
     add_section_header("1. VOLUME & SURFACE SPECIFICATIONS (مشخصات احجام و سطوح)")
+    add_row_kv("Engineered By:", "Yousefi Intelligence (TopoConvert CAD Engine)")
     elev = m.get("elevation_m") or {}
     slope = m.get("slope") or {}
     active_cnt = m.get(

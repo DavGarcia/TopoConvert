@@ -361,11 +361,18 @@ export const App: React.FC = () => {
       <header className="top-header">
         <div className="brand-block">
           <div className="brand-logo" aria-hidden="true">
-            ▲
+            YI
           </div>
-          <div>
-            <div className="brand-title">{fa.appTitle}</div>
-            <div className="brand-subtitle">{fa.appSubtitle}</div>
+          <div className="brand-titles-wrap">
+            <div className="brand-title-row">
+              <span className="brand-title">{fa.appTitle}</span>
+              <span className="yousefi-brand-pill" title="Engineered by Yousefi Intelligence">
+                ✦ Yousefi Intelligence
+              </span>
+            </div>
+            <div className="brand-subtitle">
+              {fa.appSubtitle} • <strong>Yousefi Intelligence</strong>
+            </div>
           </div>
         </div>
 
@@ -456,28 +463,35 @@ export const App: React.FC = () => {
             onTouchStart={handleSheetTouchStart}
             onTouchEnd={handleSheetTouchEnd}
           >
-            <div className="sheet-grab-bar" />
+            <div
+              className="sheet-grab-bar"
+              onClick={() =>
+                setSheetState((s) =>
+                  s === "half" ? "full" : s === "full" ? "collapsed" : "half"
+                )
+              }
+            />
             <div className="sheet-state-btns">
               <button
                 type="button"
                 className={`sheet-tab-btn ${sheetState === "collapsed" ? "active" : ""}`}
                 onClick={() => setSheetState("collapsed")}
               >
-                {fa.actions.sheetCollapsed}
+                🗺️ {fa.actions.sheetCollapsed}
               </button>
               <button
                 type="button"
                 className={`sheet-tab-btn ${sheetState === "half" ? "active" : ""}`}
                 onClick={() => setSheetState("half")}
               >
-                {fa.actions.sheetHalf}
+                ⚖️ {fa.actions.sheetHalf}
               </button>
               <button
                 type="button"
                 className={`sheet-tab-btn ${sheetState === "full" ? "active" : ""}`}
                 onClick={() => setSheetState("full")}
               >
-                {fa.actions.sheetFull}
+                📋 {fa.actions.sheetFull}
               </button>
             </div>
           </div>
@@ -1240,6 +1254,7 @@ export const App: React.FC = () => {
                 />
                 <span>{fa.header.autoAdvance}</span>
               </label>
+              <span className="footer-brand-sig">✦ Yousefi Intelligence</span>
             </div>
             <div className="footer-nav-btns">
               {activeStep > 1 && (
@@ -1286,6 +1301,10 @@ export const App: React.FC = () => {
             showSlopeHeatmap={showSlopeHeatmap}
             layers={layers}
             onToggleLayer={handleToggleLayer}
+            mobileMapExpanded={sheetState === "collapsed"}
+            onToggleMobileMapExpanded={() =>
+              setSheetState((s) => (s === "collapsed" ? "half" : "collapsed"))
+            }
           />
         </section>
       </main>

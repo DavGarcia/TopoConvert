@@ -117,28 +117,67 @@ body,
 .brand-logo {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border-radius: 9px;
+  background: linear-gradient(135deg, #10b981, #0284c7);
   color: #070d19;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: 0.92rem;
+  letter-spacing: 0.5px;
   flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+}
+
+.brand-titles-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .brand-title {
-  font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+  font-size: clamp(0.9rem, 1.8vw, 1.12rem);
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
 }
 
+.yousefi-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(56, 189, 248, 0.18));
+  border: 1px solid rgba(16, 185, 129, 0.48);
+  color: var(--emerald);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  direction: ltr;
+}
+
 .brand-subtitle {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
   display: none;
+}
+
+.footer-brand-sig {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--emerald);
+  direction: ltr;
+  letter-spacing: 0.2px;
 }
 
 .mobile-step-badge {
@@ -256,31 +295,30 @@ body,
   color: #070d19;
 }
 
-/* Mobile-first Workspace Layout */
+/* Mobile-first Workspace Layout (Non-overlapping split: Map on Top, Sheet on Bottom) */
 .workspace-grid {
   position: relative;
   flex: 1;
   width: 100%;
   min-height: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   overflow: hidden;
 }
 
 .viewer-stage {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
   width: 100%;
-  height: 100%;
+  min-height: 140px;
   z-index: 1;
+  overflow: hidden;
 }
 
-/* Mobile Draggable Bottom Sheet */
+/* Mobile Responsive Bottom Sheet */
 .wizard-panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  width: 100%;
   z-index: 20;
   background: var(--bg-panel);
   backdrop-filter: blur(16px);
@@ -289,35 +327,41 @@ body,
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  transition: height 0.24s ease;
+  transition: height 0.22s ease;
   max-width: 100vw;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .wizard-panel.sheet-collapsed {
-  height: 118px;
+  height: 112px;
+}
+
+.wizard-panel.sheet-collapsed .panel-scroll-body {
+  display: none;
 }
 
 .wizard-panel.sheet-half {
-  height: 52dvh;
+  height: 48dvh;
 }
 
 .wizard-panel.sheet-full {
-  height: calc(100% - 8px);
+  height: 74dvh;
 }
 
 .mobile-sheet-header {
-  padding: 6px 10px 4px;
+  padding: 5px 10px 4px;
   border-bottom: 1px solid var(--border-col);
   flex-shrink: 0;
 }
 
 .sheet-grab-bar {
-  width: 42px;
+  width: 44px;
   height: 4px;
   border-radius: 2px;
   background: rgba(148, 163, 184, 0.45);
-  margin: 0 auto 6px;
+  margin: 0 auto 5px;
+  cursor: pointer;
 }
 
 .sheet-state-btns {
@@ -327,21 +371,25 @@ body,
 }
 
 .sheet-tab-btn {
-  min-height: 44px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  min-height: 36px;
+  flex: 1;
+  max-width: 125px;
+  padding: 2px 8px;
+  border-radius: 8px;
   border: 1px solid var(--border-col);
   background: var(--bg-card);
   color: var(--text-muted);
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .sheet-tab-btn.active {
+  background: rgba(56, 189, 248, 0.16);
   border-color: var(--accent);
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .panel-scroll-body {
@@ -802,7 +850,7 @@ input[type="range"] {
 .viewer-layers-bar {
   align-self: flex-start;
   max-width: 100%;
-  display: flex;
+  display: none;
   gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -812,6 +860,120 @@ input[type="range"] {
   border-radius: 10px;
   padding: 3px;
   pointer-events: auto;
+}
+
+.viewer-layers-bar.mobile-open {
+  display: flex;
+}
+
+.viewer-pill-toggle {
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-col);
+  background: rgba(30, 41, 59, 0.65);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.viewer-pill-toggle.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.desktop-only-zoom {
+  display: none;
+}
+
+/* Ergonomic Floating Right-Side Thumb Zoom Dock */
+.viewer-thumb-zoom-dock {
+  position: absolute;
+  right: 10px;
+  top: 52%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-col);
+  border-radius: 12px;
+  padding: 5px;
+  z-index: 12;
+  box-shadow: var(--shadow);
+}
+
+.thumb-zoom-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(30, 41, 59, 0.75);
+  color: var(--text-main);
+  font-size: 1.22rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.thumb-zoom-btn:active {
+  transform: scale(0.92);
+  background: var(--accent);
+  color: #070d19;
+}
+
+.thumb-zoom-btn.fit-btn {
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+.thumb-zoom-readout {
+  min-width: 40px;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--emerald);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  direction: ltr;
+}
+
+/* Yousefi Intelligence Watermark on Map */
+.viewer-brand-watermark {
+  position: absolute;
+  left: 10px;
+  top: 58px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(7, 13, 25, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #e2e8f0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  direction: ltr;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.brand-sparkle {
+  color: var(--emerald);
 }
 
 .viewer-layers-bar::-webkit-scrollbar {
@@ -845,9 +1007,9 @@ input[type="range"] {
 
 .viewer-hud-bottom {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 53dvh;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -957,16 +1119,21 @@ input[type="range"] {
   display: none;
   position: absolute;
   left: 10px;
-  bottom: 84px;
+  bottom: 64px;
   width: 245px;
+  max-width: calc(100vw - 74px);
   background: var(--bg-glass);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-col);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.74rem;
-  z-index: 10;
+  z-index: 14;
   box-shadow: var(--shadow);
+}
+
+.viewer-side-spec-box.mobile-open {
+  display: block;
 }
 
 .side-spec-hdr {
@@ -1026,8 +1193,21 @@ input[type="range"] {
   .mobile-step-badge {
     display: none;
   }
-  .desktop-only-btn {
+  .desktop-only-btn,
+  .desktop-only-zoom {
     display: inline-flex;
+  }
+  .mobile-only-toggle {
+    display: none;
+  }
+  .viewer-layers-bar {
+    display: flex;
+  }
+  .viewer-brand-watermark {
+    top: auto;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .workspace-grid {
     flex-direction: row;
@@ -1040,6 +1220,9 @@ input[type="range"] {
     border-left: 1px solid var(--border-col);
     border-radius: 0;
     flex-shrink: 0;
+  }
+  .wizard-panel.sheet-collapsed .panel-scroll-body {
+    display: block;
   }
   .wizard-panel.panel-collapsed {
     display: none;
@@ -1057,8 +1240,11 @@ input[type="range"] {
   }
   .viewer-side-spec-box {
     display: block;
+    bottom: 84px;
   }
   .auto-advance-row {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }

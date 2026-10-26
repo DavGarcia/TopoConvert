@@ -346,6 +346,9 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
   <div class="container">
     <div class="header-card">
       <div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.4);color:#10b981;padding:3px 10px;border-radius:999px;font-size:0.78rem;font-weight:700;margin-bottom:6px;">
+          ✦ Yousefi Intelligence • سامانه هوشمند مهندسی نقشه‌برداری و توپوگرافی
+        </div>
         <h1>گزارش مهندسی پردازش توپوگرافی و مدل رقومی ارتفاع (TIN)</h1>
         <div class="meta">
           فایل ورودی: <strong>{{ filename }}</strong> |
@@ -509,6 +512,10 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
     {% endif %}
+
+    <div style="text-align:center;padding:12px;color:var(--muted);font-size:0.82rem;border-top:1px solid var(--border);margin-top:8px;">
+      طراحی، الگوریتم و مهندسی سامانه توسط <strong style="color:var(--accent);">Yousefi Intelligence</strong> • TopoConvert GIS &amp; CAD Engine
+    </div>
   </div>
 </body>
 </html>
